@@ -730,6 +730,7 @@ class CreditRiskHandler(http.server.SimpleHTTPRequestHandler):
 
 # Run the server
 if __name__ == '__main__':
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), CreditRiskHandler) as httpd:
         print(f"Credit Risk Backend Server running at http://localhost:{PORT}")
         try:
