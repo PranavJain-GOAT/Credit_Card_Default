@@ -3,9 +3,7 @@ import socketserver
 import json
 import pickle
 import os
-import urllib.parse
 import traceback
-import numpy as np
 import pandas as pd
 from catboost import Pool
 
