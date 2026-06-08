@@ -61,9 +61,8 @@ for folder in [base_dir, os.path.abspath(os.path.join(base_dir, ".."))]:
                         key, val = line.split("=", 1)
                         k = key.strip()
                         v = val.strip().strip('"').strip("'")
-                        if k not in os.environ:
-                            os.environ[k] = v
-                            print(f"Loaded environment variable {k} from {env_path} (length: {len(v)})")
+                        os.environ[k] = v
+                        print(f"Loaded environment variable {k} from {env_path} (length: {len(v)})")
         except Exception as e:
             print(f"Warning: Could not read .env file at {env_path}: {e}")
 
