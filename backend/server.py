@@ -4,10 +4,49 @@ import json
 import pickle
 import os
 import traceback
+import sqlite3
+import datetime
 import pandas as pd
 from catboost import Pool
 
 PORT = 8000
+
+# Database Path
+base_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(base_dir, "credit_risk.db")
+
+def init_db():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                applicant_name TEXT,
+                prediction_timestamp TEXT,
+                default_probability REAL,
+                non_default_probability REAL,
+                risk_category TEXT,
+                lending_decision TEXT,
+                age REAL,
+                annual_income REAL,
+                loan_amount REAL,
+                total_debt REAL,
+                ext_source_1 REAL,
+                ext_source_2 REAL,
+                ext_source_3 REAL,
+                executive_summary TEXT,
+                raw_inputs TEXT,
+                response_json TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
+        print("SQLite Database initialized and tables verified.")
+    except Exception as e:
+        print(f"Error initializing SQLite Database: {e}")
+
+init_db()
 
 # Load environment variables from .env file if it exists in backend/ or root/
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -658,6 +697,48 @@ class CreditRiskHandler(http.server.SimpleHTTPRequestHandler):
                 inputs = json.loads(post_data.decode('utf-8'))
                 results = predict_credit_risk(inputs)
                 
+                # Save to SQLite Database
+                try:
+                    conn = sqlite3.connect(DB_PATH)
+                    cursor = conn.cursor()
+                    
+                    timestamp = datetime.datetime.now().isoformat()
+                    applicant_name = inputs.get("name", "John Doe")
+                    default_prob = float(results.get("default_probability", 0.0))
+                    non_default_prob = float(results.get("non_default_probability", 1.0))
+                    risk_cat = results.get("risk_category", "Unknown")
+                    decision = results.get("decision", "PENDING")
+                    age = float(inputs.get("age", 35.0))
+                    income = float(inputs.get("income", 50000.0))
+                    loan_amount = float(inputs.get("loan_amount", 100000.0))
+                    total_debt = float(inputs.get("total_debt", 0.0))
+                    ext_1 = float(inputs.get("ext_source_1", 0.5))
+                    ext_2 = float(inputs.get("ext_source_2", 0.5))
+                    ext_3 = float(inputs.get("ext_source_3", 0.5))
+                    exec_summary = results.get("executive_summary", "")
+                    
+                    raw_inputs_str = json.dumps(inputs)
+                    response_json_str = json.dumps(results)
+                    
+                    cursor.execute("""
+                        INSERT INTO predictions (
+                            applicant_name, prediction_timestamp, default_probability, non_default_probability,
+                            risk_category, lending_decision, age, annual_income, loan_amount, total_debt,
+                            ext_source_1, ext_source_2, ext_source_3, executive_summary, raw_inputs, response_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        applicant_name, timestamp, default_prob, non_default_prob,
+                        risk_cat, decision, age, income, loan_amount, total_debt,
+                        ext_1, ext_2, ext_3, exec_summary, raw_inputs_str, response_json_str
+                    ))
+                    conn.commit()
+                    results["db_id"] = cursor.lastrowid
+                    conn.close()
+                    print(f"Saved prediction for {applicant_name} to SQLite history (ID: {results['db_id']})")
+                except Exception as db_err:
+                    print(f"Error saving prediction to SQLite: {db_err}")
+                    traceback.print_exc()
+                
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
@@ -723,17 +804,111 @@ class CreditRiskHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e), "traceback": traceback.format_exc()}).encode('utf-8'))
+        elif self.path == '/api/history':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                body = json.loads(post_data.decode('utf-8'))
+                search = body.get("search", "").strip()
+                sort = body.get("sort", "newest")
+                record_id = body.get("id", None)
+
+                conn = sqlite3.connect(DB_PATH)
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                if record_id is not None:
+                    cursor.execute("SELECT * FROM predictions WHERE id = ?", (record_id,))
+                    row = cursor.fetchone()
+                    conn.close()
+                    if row:
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(json.dumps(dict(row)).encode('utf-8'))
+                    else:
+                        self.send_response(404)
+                        self.send_header('Content-type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"error": "Record not found"}).encode('utf-8'))
+                    return
+
+                query = "SELECT id, applicant_name, prediction_timestamp, default_probability, risk_category, lending_decision FROM predictions WHERE 1=1"
+                params = []
+
+                if search:
+                    query += " AND (applicant_name LIKE ? OR risk_category LIKE ? OR lending_decision LIKE ?)"
+                    like = f"%{search}%"
+                    params.extend([like, like, like])
+
+                if sort == "newest":
+                    query += " ORDER BY id DESC"
+                elif sort == "highest_risk":
+                    query += " ORDER BY default_probability DESC"
+                elif sort == "lowest_risk":
+                    query += " ORDER BY default_probability ASC"
+                else:
+                    query += " ORDER BY id DESC"
+
+                cursor.execute(query, params)
+                rows = [dict(r) for r in cursor.fetchall()]
+                conn.close()
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"records": rows}).encode('utf-8'))
+            except Exception as e:
+                print("Error in /api/history:")
+                traceback.print_exc()
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+
+        elif self.path == '/api/history/delete':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                body = json.loads(post_data.decode('utf-8'))
+                record_id = body.get("id")
+                if record_id is None:
+                    raise ValueError("Missing record id")
+
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM predictions WHERE id = ?", (record_id,))
+                affected = cursor.rowcount
+                conn.commit()
+                conn.close()
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"deleted": affected > 0, "id": record_id}).encode('utf-8'))
+            except Exception as e:
+                print("Error in /api/history/delete:")
+                traceback.print_exc()
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+
         else:
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b"Endpoint not found")
 
-# Run the server
+# Run the server — ThreadingTCPServer handles concurrent requests without blocking
+class ThreadedServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
 if __name__ == '__main__':
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), CreditRiskHandler) as httpd:
-        print(f"Credit Risk Backend Server running at http://localhost:{PORT}")
+    with ThreadedServer(("", PORT), CreditRiskHandler) as httpd:
+        print(f"[Nexus Risk] Server running at http://localhost:{PORT}")
+        print(f"[Nexus Risk] SQLite DB: {DB_PATH}")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("Stopping server...")
+            print("[Nexus Risk] Stopping server...")

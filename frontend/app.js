@@ -37,17 +37,21 @@ function switchTab(tabId) {
     
     if (tabId === 'dashboard') {
         title.innerText = 'Underwriting Dashboard';
-        subtitle.innerText = 'Real-time loan credit evaluation and risk assessment portal.';
+        subtitle.innerText = 'Real-time credit risk evaluation and default probability assessment.';
     } else if (tabId === 'underwrite') {
-        title.innerText = 'Underwriting Wizard';
-        subtitle.innerText = 'Input applicant parameters to analyze financial stability and default risk.';
+        title.innerText = 'New Credit Assessment';
+        subtitle.innerText = 'Submit applicant data through the wizard to generate a risk score.';
     } else if (tabId === 'analysis') {
         title.innerText = 'Financial Health Analysis';
-        subtitle.innerText = 'Deep dive indicators, leverage ratios, and capital stability models.';
+        subtitle.innerText = 'Leverage ratios, cash flow analysis, and financial stability indicators.';
         // Re-render charts to make sure they size properly on visibility change
         if (appState.predictionResults) {
             renderAnalysisCharts();
         }
+    } else if (tabId === 'history') {
+        title.innerText = 'Assessment Case History';
+        subtitle.innerText = 'Search, review, and manage all past credit risk evaluations.';
+        loadPredictionHistory();
     }
 }
 
@@ -257,11 +261,9 @@ function renderDashboardUI(results) {
     decisionReason.innerText = results.reasoning;
     decisionCard.style.borderLeft = `5px solid ${results.decision_color}`;
     
-    // Risk Meter & Needle position
+    // Risk Meter — Move needle only (track is a static gradient band)
     const needle = document.getElementById('risk-needle');
-    const meterBar = document.getElementById('risk-meter-bar');
     needle.style.left = `${results.risk_score}%`;
-    meterBar.style.width = `${results.risk_score}%`;
     
     // AI executive summary
     document.getElementById('summary-ai-content').innerText = results.executive_summary;
@@ -524,8 +526,9 @@ function renderAnalysisCharts() {
     if (!results) return;
     
     const isDark = appState.theme === 'dark';
-    const gridColor = isDark ? 'rgba(75, 85, 99, 0.3)' : 'rgba(226, 232, 240, 1)';
-    const textColor = isDark ? '#9ca3af' : '#64748b';
+    const gridColor = isDark ? 'rgba(48,54,61,0.8)' : 'rgba(221,226,234,1)';
+    const textColor = isDark ? '#6e7681' : '#8b949e';
+    const labelColor = isDark ? '#e6edf3' : '#0f1923';
     
     // Update metrics scorecard texts
     const creditIncomeEl = document.getElementById('scorecard-credit-income');
@@ -627,13 +630,13 @@ function renderAnalysisCharts() {
             datasets: [{
                 label: 'Applicant Risk Profile',
                 data: radarData,
-                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(31,111,235,0.12)',
+                borderColor: '#1f6feb',
                 borderWidth: 2,
-                pointBackgroundColor: '#3b82f6',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#3b82f6'
+                pointBackgroundColor: '#1f6feb',
+                pointBorderColor: isDark ? '#1c2230' : '#ffffff',
+                pointHoverBackgroundColor: '#388bfd',
+                pointHoverBorderColor: '#388bfd'
             }]
         },
         options: {
@@ -644,8 +647,8 @@ function renderAnalysisCharts() {
                     angleLines: { color: gridColor },
                     grid: { color: gridColor },
                     pointLabels: {
-                        color: isDark ? '#f3f4f6' : '#0f172a',
-                        font: { size: 11, family: 'Inter', weight: '500' }
+                        color: labelColor,
+                        font: { size: 10, family: 'IBM Plex Sans', weight: '600' }
                     },
                     ticks: {
                         backdropColor: 'transparent',
@@ -674,26 +677,26 @@ function renderAnalysisCharts() {
         type: 'bar',
         data: {
             labels: [
-                'Current Requested Loan',
-                'Avg Prior Loans Approved',
-                'Max Prior Loan Limit',
-                'Avg Prior Goods Purchased'
+                'Current Request',
+                'Avg Prior Approved',
+                'Max Prior Limit',
+                'Avg Prior Goods'
             ],
             datasets: [{
                 data: [
                     app.loan_amount,
                     app.avg_prev_credit || 0.0,
                     app.max_prev_credit || 0.0,
-                    app.avg_prev_credit * 0.95 || 0.0 // Proxy
+                    app.avg_prev_credit * 0.95 || 0.0
                 ],
                 backgroundColor: [
-                    'rgba(59, 130, 246, 0.85)',
-                    'rgba(16, 185, 129, 0.75)',
-                    'rgba(16, 185, 129, 0.75)',
-                    'rgba(139, 92, 246, 0.75)'
+                    'rgba(31, 111, 235, 0.85)',
+                    'rgba(46, 160, 67, 0.75)',
+                    'rgba(46, 160, 67, 0.55)',
+                    'rgba(210, 153, 34, 0.75)'
                 ],
-                borderRadius: 6,
-                maxBarThickness: 50
+                borderRadius: 3,
+                maxBarThickness: 48
             }]
         },
         options: {
@@ -702,15 +705,15 @@ function renderAnalysisCharts() {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: textColor, font: { size: 10 } }
+                    ticks: { color: textColor, font: { size: 11, family: 'IBM Plex Sans' } }
                 },
                 y: {
                     grid: { color: gridColor },
                     ticks: {
                         color: textColor,
-                        font: { size: 9 },
+                        font: { size: 10, family: 'IBM Plex Mono' },
                         callback: function(value) {
-                            return '$' + (value / 1000) + 'k';
+                            return '$' + (value / 1000).toFixed(0) + 'k';
                         }
                     }
                 }
@@ -962,4 +965,281 @@ function sendChatMessage(event) {
         loadingMsg.innerText = "Error: Failed to connect to underwriting assistant.";
         loadingMsg.style.color = "var(--danger-color)";
     });
+}
+
+// =============================================
+// PREDICTION HISTORY TAB
+// =============================================
+
+let _historySearchTimeout = null;
+let _currentDetailRecord = null;
+
+function debounceSearchHistory() {
+    clearTimeout(_historySearchTimeout);
+    _historySearchTimeout = setTimeout(() => loadPredictionHistory(), 350);
+}
+
+function loadPredictionHistory() {
+    const search = (document.getElementById('history-search') || {}).value || '';
+    const sort = (document.getElementById('history-sort') || {}).value || 'newest';
+
+    fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ search, sort })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const tbody = document.getElementById('history-table-body');
+        const countLabel = document.getElementById('history-count-label');
+        if (!tbody) return;
+
+        const records = data.records || [];
+        countLabel.innerText = `${records.length} record${records.length !== 1 ? 's' : ''} found`;
+
+        if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--subtext-color);padding:40px;">No predictions found. Run an evaluation to get started.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        records.forEach(rec => {
+            const prob = rec.default_probability * 100;
+            let probClass = 'low';
+            if (prob >= 60) probClass = 'high';
+            else if (prob >= 30) probClass = 'medium';
+
+            const dec = rec.lending_decision || '';
+            let decClass = 'review';
+            if (dec.includes('APPROVE')) decClass = 'approve';
+            else if (dec.includes('DECLINE') || dec.includes('REJECT')) decClass = 'decline';
+
+            const ts = rec.prediction_timestamp
+                ? new Date(rec.prediction_timestamp).toLocaleString()
+                : '--';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escHtml(rec.applicant_name || 'Unknown')}</strong></td>
+                <td style="color:var(--subtext-color);font-size:12px;">${ts}</td>
+                <td><span class="prob-badge ${probClass}">${prob.toFixed(1)}%</span></td>
+                <td>${escHtml(rec.risk_category || '--')}</td>
+                <td><span class="decision-badge-hist ${decClass}">${escHtml(dec)}</span></td>
+                <td>
+                    <button class="history-action-btn" onclick="openDetailsModal(${rec.id})">&#128270; View</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    })
+    .catch(err => {
+        console.error('History load error:', err);
+        const tbody = document.getElementById('history-table-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger-color);padding:30px;">Failed to load history. Ensure the server is running.</td></tr>';
+    });
+}
+
+function openDetailsModal(id) {
+    fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    })
+    .then(r => {
+        if (!r.ok) throw new Error('Record not found');
+        return r.json();
+    })
+    .then(rec => {
+        _currentDetailRecord = rec;
+
+        document.getElementById('modal-applicant-name').innerText = rec.applicant_name || 'Unknown';
+        document.getElementById('modal-timestamp').innerText = rec.prediction_timestamp
+            ? new Date(rec.prediction_timestamp).toLocaleString()
+            : '--';
+
+        const prob = (rec.default_probability * 100).toFixed(1);
+        const dec = rec.lending_decision || '--';
+        let decClass = 'review';
+        if (dec.includes('APPROVE')) decClass = 'approve';
+        else if (dec.includes('DECLINE') || dec.includes('REJECT')) decClass = 'decline';
+
+        const badge = document.getElementById('modal-decision-badge');
+        badge.innerText = dec;
+        badge.className = 'modal-decision-badge decision-badge-hist ' + decClass;
+
+        // Parse raw inputs
+        let raw = {};
+        try {
+            if (rec.raw_inputs) {
+                raw = typeof rec.raw_inputs === 'string' ? JSON.parse(rec.raw_inputs) : rec.raw_inputs;
+            }
+        } catch (e) {
+            console.error("Failed to parse raw_inputs:", e);
+        }
+
+        // Helper to format currency
+        const fmtCurr = (val) => val != null ? '$' + Number(val).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '--';
+        
+        // 1. Applicant Profile & Assets
+        const genderText = raw.gender === 'F' ? 'Female' : raw.gender === 'M' ? 'Male' : (raw.gender || '--');
+        const ageVal = raw.age || rec.age;
+        document.getElementById('modal-profile-age-gender').innerText = ageVal ? `${Math.round(ageVal)} yrs / ${genderText}` : '--';
+        document.getElementById('modal-profile-marital').innerText = raw.marital_status || '--';
+        document.getElementById('modal-profile-dependents').innerText = raw.children != null ? raw.children : '--';
+        document.getElementById('modal-profile-education').innerText = raw.education || '--';
+        document.getElementById('modal-profile-housing').innerText = raw.housing || '--';
+        document.getElementById('modal-profile-assets').innerText = `Car: ${raw.own_car === 'Y' ? 'Yes' : 'No'} / Property: ${raw.own_property === 'Y' ? 'Yes' : 'No'}`;
+        document.getElementById('modal-profile-employment').innerText = raw.employment_type || '--';
+        document.getElementById('modal-profile-tenure').innerText = raw.years_employed != null ? `${Number(raw.years_employed).toFixed(1)} yrs` : '--';
+
+        // 2. Financial Details & Request
+        document.getElementById('modal-fin-income').innerText = fmtCurr(raw.income || rec.annual_income);
+        document.getElementById('modal-fin-loan').innerText = fmtCurr(raw.loan_amount || rec.loan_amount);
+        document.getElementById('modal-fin-annuity').innerText = fmtCurr(raw.annuity);
+        document.getElementById('modal-fin-goods').innerText = fmtCurr(raw.goods_price);
+
+        // 3. Bureau Credit & Repayment History
+        document.getElementById('modal-credit-debt').innerText = fmtCurr(raw.total_debt || rec.total_debt);
+        document.getElementById('modal-credit-loans').innerText = `Active: ${raw.active_loans != null ? raw.active_loans : '--'} / Closed: ${raw.closed_loans != null ? raw.closed_loans : '--'}`;
+        document.getElementById('modal-credit-age').innerText = raw.avg_credit_age_days != null ? `${Math.round(raw.avg_credit_age_days)} days` : '--';
+        document.getElementById('modal-repay-days-late').innerText = `Avg: ${raw.avg_days_late != null ? raw.avg_days_late : '--'}d / Max: ${raw.max_days_late != null ? raw.max_days_late : '--'}d`;
+        document.getElementById('modal-repay-late-rate').innerText = `Count: ${raw.late_payment_count != null ? raw.late_payment_count : '--'} / Rate: ${raw.late_payment_rate != null ? (raw.late_payment_rate * 100).toFixed(1) + '%' : '--'}`;
+        document.getElementById('modal-repay-ratio').innerText = raw.avg_payment_ratio != null ? `${Number(raw.avg_payment_ratio).toFixed(2)}x` : '--';
+        document.getElementById('modal-repay-total').innerText = fmtCurr(raw.total_payment_amount);
+
+        // 4. Institutional History & Bureau Scores
+        document.getElementById('modal-inst-apps').innerText = `Total: ${raw.prev_app_count != null ? raw.prev_app_count : '--'} / Approved: ${raw.approved_count != null ? raw.approved_count : '--'}`;
+        document.getElementById('modal-inst-rate').innerText = raw.approval_rate != null ? `${(raw.approval_rate * 100).toFixed(0)}%` : '--';
+        document.getElementById('modal-inst-years').innerText = raw.years_since_last_app != null ? `${Number(raw.years_since_last_app).toFixed(1)} yrs` : '--';
+        document.getElementById('modal-inst-limits').innerText = `Avg: ${fmtCurr(raw.avg_prev_credit)} / Max: ${fmtCurr(raw.max_prev_credit)}`;
+        
+        const ext1Val = raw.ext_source_1 != null ? raw.ext_source_1 : rec.ext_source_1;
+        const ext2Val = raw.ext_source_2 != null ? raw.ext_source_2 : rec.ext_source_2;
+        const ext3Val = raw.ext_source_3 != null ? raw.ext_source_3 : rec.ext_source_3;
+        document.getElementById('modal-scores-ext').innerText = `(${ext1Val != null ? Number(ext1Val).toFixed(3) : '--'} / ${ext2Val != null ? Number(ext2Val).toFixed(3) : '--'} / ${ext3Val != null ? Number(ext3Val).toFixed(3) : '--'})`;
+
+        // Generate a compact executive summary from saved data
+        document.getElementById('modal-summary').innerText = rec.executive_summary ||
+            `${rec.applicant_name || 'This applicant'} was assessed with a default probability of ${prob}% and classified as ${rec.risk_category || 'Unknown'}. ` +
+            `The lending decision issued was: ${dec}.`;
+
+        document.getElementById('details-modal').classList.add('open');
+    })
+    .catch(err => {
+        console.error('Failed to fetch record details:', err);
+        alert('Could not load record details.');
+    });
+}
+
+function closeDetailsModal() {
+    document.getElementById('details-modal').classList.remove('open');
+    _currentDetailRecord = null;
+}
+
+function handleModalOverlayClick(event) {
+    if (event.target === event.currentTarget) {
+        closeDetailsModal();
+    }
+}
+
+function deleteFromModal() {
+    if (!_currentDetailRecord) return;
+    if (!confirm(`Delete prediction record for "${_currentDetailRecord.applicant_name}"? This cannot be undone.`)) return;
+
+    const id = _currentDetailRecord.id;
+    fetch('/api/history/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.deleted) {
+            closeDetailsModal();
+            loadPredictionHistory();
+        } else {
+            alert('Could not delete the record.');
+        }
+    })
+    .catch(err => {
+        console.error('Delete error:', err);
+        alert('Failed to delete record.');
+    });
+}
+
+function loadRecordIntoDashboard() {
+    if (!_currentDetailRecord) return;
+    const rec = _currentDetailRecord;
+
+    // Parse raw inputs
+    let raw = {};
+    try {
+        if (rec.raw_inputs) {
+            raw = typeof rec.raw_inputs === 'string' ? JSON.parse(rec.raw_inputs) : rec.raw_inputs;
+        }
+    } catch (e) {
+        console.error("Failed to parse raw_inputs:", e);
+    }
+
+    // Populate the underwriting form with saved values
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val != null) el.value = val;
+    };
+
+    setVal('applicant-name', rec.applicant_name);
+    setVal('age', raw.age || rec.age || 38);
+    setVal('gender', raw.gender || 'M');
+    setVal('marital-status', raw.marital_status || 'Married');
+    setVal('children', raw.children != null ? raw.children : 0);
+    setVal('education', raw.education || 'Secondary / secondary special');
+    setVal('housing', raw.housing || 'House / apartment');
+    setVal('own-car', raw.own_car || 'N');
+    setVal('own-property', raw.own_property || 'Y');
+    setVal('employment-type', raw.employment_type || 'Working');
+    setVal('years-employed', raw.years_employed != null ? raw.years_employed : 4.5);
+
+    setVal('income', raw.income || rec.annual_income || 65000);
+    setVal('loan-amount', raw.loan_amount || rec.loan_amount || 180000);
+    setVal('annuity', raw.annuity != null ? raw.annuity : 12000);
+    setVal('goods-price', raw.goods_price != null ? raw.goods_price : 180000);
+
+    setVal('total-debt', raw.total_debt || rec.total_debt || 8500);
+    setVal('active-loans', raw.active_loans != null ? raw.active_loans : 2);
+    setVal('closed-loans', raw.closed_loans != null ? raw.closed_loans : 5);
+    setVal('avg-credit-age-days', raw.avg_credit_age_days != null ? raw.avg_credit_age_days : 1200);
+
+    setVal('prev-app-count', raw.prev_app_count != null ? raw.prev_app_count : 3);
+    setVal('approved-count', raw.approved_count != null ? raw.approved_count : 2);
+    setVal('refused-count', raw.refused_count != null ? raw.refused_count : 1);
+    setVal('approval-rate', raw.approval_rate != null ? raw.approval_rate : 0.67);
+    setVal('years-since-last-app', raw.years_since_last_app != null ? raw.years_since_last_app : 1.8);
+    setVal('avg-prev-credit', raw.avg_prev_credit != null ? raw.avg_prev_credit : 45000);
+    setVal('max-prev-credit', raw.max_prev_credit != null ? raw.max_prev_credit : 70000);
+    setVal('avg-prev-annuity', raw.avg_prev_annuity != null ? raw.avg_prev_annuity : 4500);
+
+    setVal('avg-days-late', raw.avg_days_late != null ? raw.avg_days_late : 2.5);
+    setVal('max-days-late', raw.max_days_late != null ? raw.max_days_late : 15);
+    setVal('late-payment-count', raw.late_payment_count != null ? raw.late_payment_count : 3);
+    setVal('late-payment-rate', raw.late_payment_rate != null ? raw.late_payment_rate : 0.08);
+    setVal('avg-payment-ratio', raw.avg_payment_ratio != null ? raw.avg_payment_ratio : 1.0);
+    setVal('total-payment-amount', raw.total_payment_amount != null ? raw.total_payment_amount : 15400);
+
+    setVal('ext-source-1', raw.ext_source_1 != null ? raw.ext_source_1 : rec.ext_source_1 || 0.5);
+    setVal('ext-source-2', raw.ext_source_2 != null ? raw.ext_source_2 : rec.ext_source_2 || 0.5);
+    setVal('ext-source-3', raw.ext_source_3 != null ? raw.ext_source_3 : rec.ext_source_3 || 0.5);
+
+    closeDetailsModal();
+    switchTab('underwrite');
+    // Go to step 1
+    appState.currentWizardStep = 1;
+    updateWizardUI();
+}
+
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
