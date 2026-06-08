@@ -528,11 +528,72 @@ function renderAnalysisCharts() {
     const textColor = isDark ? '#9ca3af' : '#64748b';
     
     // Update metrics scorecard texts
-    document.getElementById('scorecard-credit-income').innerText = results.scores.credit_to_income.toFixed(2);
-    document.getElementById('scorecard-annuity-income').innerText = `${(results.scores.annuity_to_income * 100).toFixed(1)}%`;
-    document.getElementById('scorecard-debt-burden').innerText = Math.round(results.scores.debt_burden);
-    document.getElementById('scorecard-payment-discipline').innerText = Math.round(results.scores.payment_discipline);
-    document.getElementById('scorecard-credit-stability').innerText = Math.round(results.scores.credit_stability);
+    const creditIncomeEl = document.getElementById('scorecard-credit-income');
+    const annuityIncomeEl = document.getElementById('scorecard-annuity-income');
+    const dtiEl = document.getElementById('scorecard-dti-ratio');
+    const ltvEl = document.getElementById('scorecard-ltv-ratio');
+    const surplusEl = document.getElementById('scorecard-cash-surplus');
+
+    creditIncomeEl.innerText = results.scores.credit_to_income.toFixed(2);
+    annuityIncomeEl.innerText = `${(results.scores.annuity_to_income * 100).toFixed(1)}%`;
+    
+    const dtiVal = results.scores.dti_ratio;
+    dtiEl.innerText = `${dtiVal.toFixed(1)}%`;
+    if (dtiVal <= 36.0) {
+        dtiEl.style.color = 'var(--success-color)';
+    } else if (dtiVal <= 45.0) {
+        dtiEl.style.color = 'var(--warning-color)';
+    } else {
+        dtiEl.style.color = 'var(--danger-color)';
+    }
+    
+    const ltvVal = results.scores.ltv_ratio;
+    ltvEl.innerText = `${ltvVal.toFixed(1)}%`;
+    if (ltvVal <= 80.0) {
+        ltvEl.style.color = 'var(--success-color)';
+    } else if (ltvVal <= 95.0) {
+        ltvEl.style.color = 'var(--warning-color)';
+    } else {
+        ltvEl.style.color = 'var(--danger-color)';
+    }
+
+    const surplusVal = results.scores.monthly_surplus;
+    surplusEl.innerText = (surplusVal >= 0 ? "+$" : "-$") + Math.abs(surplusVal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if (surplusVal >= 0) {
+        surplusEl.style.color = 'var(--success-color)';
+    } else {
+        surplusEl.style.color = 'var(--danger-color)';
+    }
+
+    // Update cash flow breakdown metrics
+    document.getElementById('cf-monthly-income').innerText = `$${results.scores.monthly_income.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    document.getElementById('cf-proposed-payment').innerText = `$${results.scores.monthly_proposed_payment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    document.getElementById('cf-existing-payment').innerText = `$${results.scores.monthly_existing_payment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    
+    const cfSurplusEl = document.getElementById('cf-cash-surplus');
+    cfSurplusEl.innerText = (surplusVal >= 0 ? "+$" : "-$") + Math.abs(surplusVal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if (surplusVal >= 0) {
+        cfSurplusEl.style.color = 'var(--success-color)';
+    } else {
+        cfSurplusEl.style.color = 'var(--danger-color)';
+    }
+
+    // Set status badge and insight text
+    const cfBadge = document.getElementById('cf-status-badge');
+    const cfInsightText = document.getElementById('cf-insight-text');
+    if (surplusVal < 0) {
+        cfBadge.className = 'cf-insight-badge danger';
+        cfBadge.innerText = 'Deficit Risk';
+        cfInsightText.innerText = 'The applicant is facing a negative monthly surplus. Essential cash reserves are insufficient to cover this requested loan servicing.';
+    } else if (dtiVal > 40.0) {
+        cfBadge.className = 'cf-insight-badge warning';
+        cfBadge.innerText = 'High Debt Leverage';
+        cfInsightText.innerText = 'Combined Debt-to-Income is above the warning threshold (40%). Re-check supplementary assets and bureau history.';
+    } else {
+        cfBadge.className = 'cf-insight-badge good';
+        cfBadge.innerText = 'Adequate Surplus';
+        cfInsightText.innerText = 'Applicant exhibits a comfortable monthly surplus and DTI ratio is within normal limits. The cash flow supports this new loan obligation.';
+    }
     
     // 1. Radar Chart: Financial Health Profile
     const radarCtx = document.getElementById('healthRadarChart').getContext('2d');
@@ -542,19 +603,21 @@ function renderAnalysisCharts() {
     
     // Labels for radar axes
     const radarLabels = [
-        'Liability Mitigation',
-        'Income Coverage',
-        'Payment Discipline',
-        'Credit Stability',
-        'Downpayment Asset Cover'
+        'Liability Mitigation (Low DTI)',
+        'Income Margin (Low Annuity)',
+        'Payment Discipline (Low Delay)',
+        'Credit Stability (Tenure/Assets)',
+        'Equity Cover (Low LTV)'
     ];
     
+    const clamp = (val) => Math.min(100, Math.max(0, val));
+    
     const radarData = [
-        results.scores.debt_burden,
-        Math.max(0, 100 - (results.scores.annuity_to_income * 250)), // Ratio annuity/income
-        results.scores.payment_discipline,
-        results.scores.credit_stability,
-        Math.min(100, Math.round(results.scores.loan_exposure))
+        clamp(100 - dtiVal),
+        clamp(100 - (results.scores.annuity_to_income * 200)),
+        clamp(100 - results.scores.delinquency_rate),
+        clamp(results.scores.stability_score),
+        clamp(100 - ltvVal)
     ];
     
     appState.charts.radar = new Chart(radarCtx, {
@@ -685,10 +748,10 @@ function printReport() {
     
     document.getElementById('p-summary').innerText = results.executive_summary;
     
-    document.getElementById('p-score-debt').innerText = Math.round(results.scores.debt_burden);
-    document.getElementById('p-score-loan').innerText = Math.round(results.scores.loan_exposure);
-    document.getElementById('p-score-stability').innerText = Math.round(results.scores.credit_stability);
-    document.getElementById('p-score-discipline').innerText = Math.round(results.scores.payment_discipline);
+    document.getElementById('p-score-dti').innerText = `${results.scores.dti_ratio.toFixed(1)}%`;
+    document.getElementById('p-score-ltv').innerText = `${results.scores.ltv_ratio.toFixed(1)}%`;
+    document.getElementById('p-score-stability').innerText = Math.round(results.scores.stability_score);
+    document.getElementById('p-score-delinquency').innerText = `${results.scores.delinquency_rate.toFixed(1)}%`;
     
     // Strengths
     const pSt = document.getElementById('p-strengths');

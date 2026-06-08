@@ -302,14 +302,45 @@ def predict_credit_risk(inputs):
         
     reasoning = " ".join(reasons)
     
-    # Financial Health Scores (0 to 100)
+    # Calculate real banking credit underwriting metrics
+    # 1. Loan-to-Value (LTV) Ratio (Principal / Goods Price)
+    ltv_ratio = (credit / goods_price * 100.0) if goods_price > 0 else 0.0
+    
+    # 2. Monthly Debt Service (Annuity + 3% of existing bureau debt as monthly payment proxy)
+    monthly_proposed_payment = annuity / 12.0
+    monthly_existing_payment = (total_debt * 0.03)
+    total_monthly_obligations = monthly_proposed_payment + monthly_existing_payment
+    
+    # 3. Monthly Gross Income
+    monthly_income = income / 12.0
+    
+    # 4. Total Debt-to-Income (DTI) Ratio
+    dti_ratio = (total_monthly_obligations / monthly_income * 100.0) if monthly_income > 0 else 0.0
+    
+    # 5. Monthly Disposable Surplus
+    monthly_surplus = monthly_income - total_monthly_obligations
+    
+    # 6. Payment Delinquency Rate
+    delinquency_rate = late_rate * 100.0
+    
+    # 7. Credit Stability Score (0 to 100)
+    has_car = 15.0 if inputs.get("own_car") == "Y" else 0.0
+    has_realty = 15.0 if inputs.get("own_property") == "Y" else 0.0
+    tenure_score = min(40.0, years_employed * 4.0)
+    history_score = max(0.0, 30.0 - (refused_count * 15.0))
+    stability_score = has_car + has_realty + tenure_score + history_score
+
     scores = {
         "credit_to_income": float(credit_income_ratio),
         "annuity_to_income": float(annuity_income_ratio),
-        "debt_burden": float(min(100, max(0, 100 - (row["TOTAL_DEBT"] / (income + 1) * 10)))),
-        "loan_exposure": float(min(100, max(0, (credit / (goods_price + 1)) * 100))),
-        "credit_stability": float(min(100, max(0, (years_employed / 15) * 50 + (1 - default_prob) * 50))),
-        "payment_discipline": float(min(100, max(0, 100 - (row["LATE_PAYMENT_RATE"] * 100))))
+        "ltv_ratio": float(ltv_ratio),
+        "dti_ratio": float(dti_ratio),
+        "monthly_surplus": float(monthly_surplus),
+        "delinquency_rate": float(delinquency_rate),
+        "stability_score": float(stability_score),
+        "monthly_income": float(monthly_income),
+        "monthly_proposed_payment": float(monthly_proposed_payment),
+        "monthly_existing_payment": float(monthly_existing_payment)
     }
     
     # Executive Summary (5-8 sentences)
