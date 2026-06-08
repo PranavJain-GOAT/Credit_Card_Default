@@ -1,0 +1,14 @@
+# Local environment variables
+.env
+backend/.env
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# IDE files
+.vscode/
+.idea/
