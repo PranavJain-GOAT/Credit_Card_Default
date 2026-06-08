@@ -528,32 +528,26 @@
 
                                     <div class="scorecard-row">
                                         <div class="scorecard-info">
-                                            <div class="scorecard-title">Debt Burden Score</div>
-                                            <div class="scorecard-desc">Outstanding liabilities compared to annual revenue stream.</div>
+                                            <div class="scorecard-title">Debt-to-Income (DTI) Ratio</div>
+                                            <div class="scorecard-desc">Combined proposed loan & existing obligations over monthly income.</div>
                                         </div>
-                                        <div class="scorecard-metric-val">
-                                            <span id="scorecard-debt-burden">--</span><span class="score-denominator">/100</span>
-                                        </div>
+                                        <div class="scorecard-metric" id="scorecard-dti-ratio" style="color: var(--warning-color);">--%</div>
                                     </div>
 
                                     <div class="scorecard-row">
                                         <div class="scorecard-info">
-                                            <div class="scorecard-title">Payment Discipline Score</div>
-                                            <div class="scorecard-desc">Punctuality and consistency score of historical payments.</div>
+                                            <div class="scorecard-title">Loan-to-Value (LTV) Ratio</div>
+                                            <div class="scorecard-desc">Requested loan amount compared to purchase price of the asset.</div>
                                         </div>
-                                        <div class="scorecard-metric-val">
-                                            <span id="scorecard-payment-discipline">--</span><span class="score-denominator">/100</span>
-                                        </div>
+                                        <div class="scorecard-metric" id="scorecard-ltv-ratio" style="color: var(--success-color);">--%</div>
                                     </div>
 
                                     <div class="scorecard-row">
                                         <div class="scorecard-info">
-                                            <div class="scorecard-title">Credit Stability Score</div>
-                                            <div class="scorecard-desc">Composite index representing employment stability and asset ownership.</div>
+                                            <div class="scorecard-title">Net Monthly Cash Surplus</div>
+                                            <div class="scorecard-desc">Remaining disposable cash flow after servicing all obligations.</div>
                                         </div>
-                                        <div class="scorecard-metric-val">
-                                            <span id="scorecard-credit-stability">--</span><span class="score-denominator">/100</span>
-                                        </div>
+                                        <div class="scorecard-metric" id="scorecard-cash-surplus">$--</div>
                                     </div>
                                 </div>
                             </div>
@@ -567,6 +561,44 @@
                                 </div>
                                 <div class="chart-wrapper">
                                     <canvas id="healthRadarChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Underwriting Cash Flow & Liability Breakdown Row -->
+                    <div class="dashboard-row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>Underwriting Cash Flow & Liability Breakdown</h3>
+                                </div>
+                                <div class="cash-flow-breakdown-grid">
+                                    <div class="breakdown-card">
+                                        <span class="breakdown-label">Net Monthly Income</span>
+                                        <span class="breakdown-value text-success" id="cf-monthly-income">$--</span>
+                                        <span class="breakdown-subtext">Net annual income / 12 months</span>
+                                    </div>
+                                    <div class="breakdown-card">
+                                        <span class="breakdown-label">Proposed Loan Payment</span>
+                                        <span class="breakdown-value text-primary" id="cf-proposed-payment">$--</span>
+                                        <span class="breakdown-subtext">Monthly proposed loan annuity</span>
+                                    </div>
+                                    <div class="breakdown-card">
+                                        <span class="breakdown-label">Existing Bureau Debt Service</span>
+                                        <span class="breakdown-value text-warning" id="cf-existing-payment">$--</span>
+                                        <span class="breakdown-subtext">3% monthly proxy on outstanding debt</span>
+                                    </div>
+                                    <div class="breakdown-card">
+                                        <span class="breakdown-label">Net Monthly Cash Surplus</span>
+                                        <span class="breakdown-value" id="cf-cash-surplus">$--</span>
+                                        <span class="breakdown-subtext">Liquid cash flow remaining</span>
+                                    </div>
+                                </div>
+                                <div class="divider" style="margin: 15px 0;"></div>
+                                <div class="cf-insights-summary" style="display: flex; align-items: center; gap: 12px;">
+                                    <span class="cf-insight-badge" id="cf-status-badge">--</span>
+                                    <span class="cf-insight-text" id="cf-insight-text">--</span>
                                 </div>
                             </div>
                         </div>
@@ -625,15 +657,15 @@
         <div class="print-section-title">EXECUTIVE SUMMARY</div>
         <p id="p-summary" style="font-size: 11pt; line-height: 1.5; margin-bottom: 15px;">--</p>
         
-        <div class="print-section-title">FINANCIAL HEALTH SCORES</div>
+        <div class="print-section-title">FINANCIAL HEALTH PROFILE</div>
         <table class="print-meta-table">
             <tr>
-                <td><strong>Debt Burden Score:</strong> <span id="p-score-debt">--</span>/100</td>
-                <td><strong>Loan Exposure Score:</strong> <span id="p-score-loan">--</span>/100</td>
+                <td><strong>Total Debt-to-Income (DTI):</strong> <span id="p-score-dti">--%</span></td>
+                <td><strong>Loan-to-Value (LTV):</strong> <span id="p-score-ltv">--%</span></td>
             </tr>
             <tr>
                 <td><strong>Credit Stability Score:</strong> <span id="p-score-stability">--</span>/100</td>
-                <td><strong>Payment Discipline Score:</strong> <span id="p-score-discipline">--</span>/100</td>
+                <td><strong>Payment Delinquency Rate:</strong> <span id="p-score-delinquency">--%</span></td>
             </tr>
         </table>
         

@@ -1461,3 +1461,102 @@ body {
 .chat-send-btn:hover {
     background: var(--primary-hover);
 }
+
+/* Underwriting Cash Flow & Liability Breakdown styles */
+.cash-flow-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+.breakdown-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.breakdown-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--subtext-color);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+}
+
+.breakdown-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+
+.breakdown-subtext {
+    font-size: 10px;
+    color: var(--subtext-color);
+    line-height: 1.3;
+}
+
+.cf-insights-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+}
+
+.cf-insight-badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.cf-insight-badge.good {
+    background-color: var(--success-glow);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.cf-insight-badge.warning {
+    background-color: var(--warning-glow);
+    color: var(--warning-color);
+    border: 1px solid var(--warning-color);
+}
+
+.cf-insight-badge.danger {
+    background-color: var(--danger-glow);
+    color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+}
+
+.cf-insight-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--subtext-color);
+}
+
+.text-success {
+    color: var(--success-color) !important;
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.text-warning {
+    color: var(--warning-color) !important;
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+}
+
