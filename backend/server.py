@@ -659,7 +659,22 @@ def call_gemini_api(api_key, system_instruction, user_prompt):
 
 # Local fallback responder using specific applicant numbers
 def local_chat_responder(question, applicant_data, prediction_results, case_loaded=False):
+    q = question.lower().strip()
     if not case_loaded:
+        if q in ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "g'day", "whats up", "what's up"]:
+            return "Hello! I am Nexus Risk AI Advisor. Welcome to the platform. To start, please navigate to the **New Underwrite** tab, fill in the applicant's profile, and click **Evaluate Underwrite** to perform an analysis. Once loaded, I will guide you through their credit risk metrics."
+        elif "my name is" in q or "i am" in q or "i'm" in q:
+            name = "there"
+            if "my name is" in q:
+                idx = q.find("my name is") + len("my name is")
+                name = question[idx:].strip().strip('.')
+            elif "i am" in q:
+                idx = q.find("i am") + len("i am")
+                name = question[idx:].strip().strip('.')
+            elif "i'm" in q:
+                idx = q.find("i'm") + len("i'm")
+                name = question[idx:].strip().strip('.')
+            return f"Hello, {name}! I am Nexus Risk AI Advisor. Nice to meet you. Please load an applicant's case using the **New Underwrite** tab first, so I can analyze their credit risk details with you."
         return "Welcome to the Underwriting Assistant! Currently, no applicant has been evaluated yet. Please navigate to the **New Underwrite** tab, fill in the applicant's profile, and click **Evaluate Underwrite** to perform an analysis. Once loaded, I will be happy to guide you through their risk scores and profile details."
 
     q = question.lower()
@@ -777,7 +792,16 @@ class CreditRiskHandler(http.server.SimpleHTTPRequestHandler):
                 applicant_data = inputs.get("applicant_data", {})
                 prediction_results = inputs.get("prediction_results", {})
                 case_loaded = inputs.get("case_loaded", False)
-                api_key = inputs.get("api_key", "") or os.environ.get("GEMINI_API_KEY", "")
+                api_key_browser = inputs.get("api_key", "")
+                api_key_env = os.environ.get("GEMINI_API_KEY", "")
+                
+                print(f"[Nexus Risk] Chat request API key source: browser length={len(api_key_browser)}, env length={len(api_key_env)}", flush=True)
+                if api_key_browser:
+                    print(f"[Nexus Risk] Using browser API key: {api_key_browser[:10]}...", flush=True)
+                else:
+                    print(f"[Nexus Risk] Using environment API key: {api_key_env[:10]}...", flush=True)
+                
+                api_key = api_key_browser or api_key_env
                 # Clean the prediction results by removing the heavy debug payload
                 pred_results_clean = prediction_results.copy() if prediction_results else {}
                 if "debug" in pred_results_clean:

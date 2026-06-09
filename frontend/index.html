@@ -927,9 +927,25 @@
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                 Nexus Risk AI Advisor
             </div>
-            <button class="chat-header-btn" onclick="toggleChatWindow()">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-            </button>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="chat-header-btn" id="chat-settings-toggle" onclick="toggleChatSettings()" title="API Key Settings">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M12.65 11.65l2.12-2.12 2.12 2.12 1.41-1.41-2.12-2.12 2.12-2.12-1.41-1.41-2.12 2.12-2.12-2.12-1.41 1.41 2.12 2.12-2.12 2.12 1.41 1.41zM7 14c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm0-8c-2.76 0-5 2.24-5 5s2.24 5 5 5c2.33 0 4.31-1.59 4.88-3.76L16.83 17H20v-3h-3v-3h-3.17L7.88 7.76C7.31 6.59 5.33 6 7 6z"/></svg>
+                </button>
+                <button class="chat-header-btn" onclick="toggleChatWindow()">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Settings Panel -->
+        <div class="chat-settings-panel" id="chat-settings-panel" style="display:none; padding:12px; background:var(--card-bg); border-bottom:1px solid var(--border); flex-direction:column; gap:8px;">
+            <div style="font-size:10px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">Gemini API Key Configuration</div>
+            <div style="display:flex; gap:6px;">
+                <input type="password" id="chat-api-key-input" placeholder="AIzaSy..." style="flex:1; height:28px; padding:0 8px; font-size:11px; background:var(--input-bg); border:1px solid var(--input-border); border-radius:3px; color:var(--text-primary); outline:none;">
+                <button class="btn btn-primary btn-sm" onclick="saveApiKey()" style="height:28px; padding:0 10px; font-size:10px; font-weight:700;">Save</button>
+                <button class="btn btn-secondary btn-sm" onclick="clearApiKey()" style="height:28px; padding:0 8px; font-size:10px; font-weight:700; border-color:var(--danger); color:var(--danger);">Clear</button>
+            </div>
+            <div style="font-size:9px; color:var(--text-muted); line-height:1.3;">Overrides the server-side default key with your custom browser local storage key.</div>
         </div>
         <div class="chat-messages" id="chat-messages">
             <div class="chat-message bot">
