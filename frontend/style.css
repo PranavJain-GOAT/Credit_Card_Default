@@ -1509,6 +1509,15 @@ a { text-decoration: none; color: inherit; }
     }
 
     /* Reset background and layout for clean page rendering */
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        color: #0f1923 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     body, .app-container, .main-content {
         background: #ffffff !important;
         color: #0f1923 !important;
@@ -1516,6 +1525,8 @@ a { text-decoration: none; color: inherit; }
         padding: 0 !important;
         width: 100% !important;
         display: block !important;
+        height: auto !important;
+        overflow: visible !important;
         box-shadow: none !important;
     }
 
@@ -1525,13 +1536,34 @@ a { text-decoration: none; color: inherit; }
         width: 100% !important;
     }
 
-    /* Print only the active tab */
-    .tab-pane {
+    .tab-content {
+        overflow: visible !important;
+        height: auto !important;
+        padding: 0 !important;
+    }
+
+    /* Hide non-report tabs always */
+    #tab-underwrite,
+    #tab-history {
         display: none !important;
     }
-    .tab-pane.active {
+
+    /* Force display of both report tabs: Dashboard & Financial Analysis */
+    #tab-dashboard,
+    #tab-analysis {
         display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
         width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Put a clean page break between Dashboard and Financial Analysis tabs */
+    #tab-dashboard {
+        page-break-after: always !important;
+        break-after: page !important;
     }
 
     /* Style cards for high contrast print readability */
@@ -1543,6 +1575,7 @@ a { text-decoration: none; color: inherit; }
         margin-bottom: 20px !important;
         padding: 16px !important;
         page-break-inside: avoid !important;
+        height: auto !important;
     }
 
     .card-header {
@@ -1581,12 +1614,32 @@ a { text-decoration: none; color: inherit; }
         color: #0f1923 !important;
     }
 
-    /* Align layout rows */
+    /* Stack layout rows vertically to prevent clipping */
     .dashboard-row.col-8-4 {
+        display: block !important;
+    }
+    
+    .dashboard-row.col-8-4 > .card {
+        width: 100% !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* Stack Financial Health Indicators and Radar Chart vertically so Pentagon labels fit */
+    .analysis-row-1 {
+        display: block !important;
+    }
+
+    .analysis-row-1 > .card {
+        width: 100% !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* Side-by-side compliance table and bureau standing is fine because they are narrow,
+       but let's force 1fr 1fr grid in dashboard */
+    .diagnostics-grid {
         display: grid !important;
-        grid-template-columns: 2fr 1fr !important;
+        grid-template-columns: 1fr 1fr !important;
         gap: 16px !important;
-        page-break-inside: avoid !important;
     }
 
     /* Print compliance grid and rating cards correctly */
@@ -1603,6 +1656,21 @@ a { text-decoration: none; color: inherit; }
     td {
         border-bottom: 1px solid #f1f5f9 !important;
         color: #0f1923 !important;
+    }
+
+    /* Style canvas and wrappers for print */
+    .chart-wrapper {
+        height: 300px !important;
+        width: 100% !important;
+        max-width: 480px !important;
+        margin: 0 auto !important;
+        position: relative !important;
+        page-break-inside: avoid !important;
+    }
+
+    canvas {
+        max-width: 100% !important;
+        max-height: 100% !important;
     }
 
     /* SHAP tracks in print */
@@ -1623,6 +1691,11 @@ a { text-decoration: none; color: inherit; }
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+    }
+
+    /* Page margins configuration */
+    @page {
+        margin: 15mm 20mm;
     }
 }
 
