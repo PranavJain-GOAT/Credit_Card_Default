@@ -1508,6 +1508,31 @@ a { text-decoration: none; color: inherit; }
         display: none !important;
     }
 
+    /* Print-friendly color tokens override */
+    :root, :root[data-theme="dark"], :root[data-theme="light"] {
+        --text-primary:   #0f1923 !important;
+        --text-secondary: #333f51 !important;
+        --text-muted:     #5a6474 !important;
+        --bg:             #ffffff !important;
+        --surface:        #ffffff !important;
+        --card-bg:        #ffffff !important;
+        --border:         #c9d1d9 !important;
+        --border-subtle:  #dde2ea !important;
+        --input-bg:       #ffffff !important;
+        --input-border:   #c9d1d9 !important;
+        --accent:         #1558c9 !important;
+        --success:        #1a7f37 !important;
+        --warning:        #9a6700 !important;
+        --danger:         #cf222e !important;
+        --primary-color:  #1558c9 !important;
+        --success-color:  #1a7f37 !important;
+        --warning-color:  #9a6700 !important;
+        --danger-color:   #cf222e !important;
+        --subtext-color:  #333f51 !important;
+        --text-color:     #0f1923 !important;
+        --border-color:   #c9d1d9 !important;
+    }
+
     /* Reset background and layout for clean page rendering */
     html, body {
         height: auto !important;

@@ -787,6 +787,29 @@ function toggleTheme() {
     }
 }
 
+// Print event listeners to temporarily force light theme for clean high-contrast exports
+window.addEventListener('beforeprint', () => {
+    if (appState.theme === 'dark') {
+        appState.printingThemeTemp = 'dark';
+        appState.theme = 'light';
+        document.documentElement.setAttribute('data-theme', 'light');
+        if (appState.predictionResults) {
+            renderAnalysisCharts();
+        }
+    }
+});
+
+window.addEventListener('afterprint', () => {
+    if (appState.printingThemeTemp === 'dark') {
+        appState.theme = 'dark';
+        document.documentElement.setAttribute('data-theme', 'dark');
+        if (appState.predictionResults) {
+            renderAnalysisCharts();
+        }
+        delete appState.printingThemeTemp;
+    }
+});
+
 
 
 // Toggle chatbot window open/close
