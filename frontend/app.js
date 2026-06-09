@@ -1271,3 +1271,45 @@ function escHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
+
+// Toggle Chat API Settings Panel
+function toggleChatSettings() {
+    const panel = document.getElementById('chat-settings-panel');
+    if (panel) {
+        const isHidden = panel.style.display === 'none' || panel.style.display === '';
+        panel.style.display = isHidden ? 'flex' : 'none';
+        if (isHidden) {
+            const input = document.getElementById('chat-api-key-input');
+            if (input) {
+                input.value = localStorage.getItem('gemini_api_key') || '';
+            }
+        }
+    }
+}
+
+// Save API Key from Panel
+function saveApiKey() {
+    const input = document.getElementById('chat-api-key-input');
+    if (input) {
+        const key = input.value.trim();
+        if (key) {
+            localStorage.setItem('gemini_api_key', key);
+            alert("Gemini API key saved in browser storage! Future requests will use this key.");
+        } else {
+            localStorage.removeItem('gemini_api_key');
+            alert("Gemini API key cleared from browser storage. Default server key will be used.");
+        }
+        toggleChatSettings();
+    }
+}
+
+// Clear API Key Input & Storage
+function clearApiKey() {
+    const input = document.getElementById('chat-api-key-input');
+    if (input) {
+        input.value = '';
+    }
+    localStorage.removeItem('gemini_api_key');
+    alert("Gemini API key cleared from browser storage.");
+    toggleChatSettings();
+}
