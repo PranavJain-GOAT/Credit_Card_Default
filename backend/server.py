@@ -683,6 +683,71 @@ def local_chat_responder(question, applicant_data, prediction_results, case_load
     prob = prediction_results.get("default_probability", 0.0)
     category = prediction_results.get("risk_category", "Unknown")
     
+    # 1. Look for definition requests in layman terms
+    is_explain = any(w in q for w in ["explain", "layman", "mean", "what is", "what are", "meaning", "define", "understanding"])
+    
+    if is_explain:
+        if any(w in q for w in ["ext_source", "ext source", "external", "bureau", "score"]):
+            ext1 = applicant_data.get("ext_source_1", 0.5)
+            ext2 = applicant_data.get("ext_source_2", 0.5)
+            ext3 = applicant_data.get("ext_source_3", 0.5)
+            
+            # Helper to rate score
+            def rate_score(s):
+                if s < 0.4: return "Weak (high risk)"
+                if s < 0.6: return "Moderate (intermediate risk)"
+                return "Strong (low risk)"
+                
+            return (
+                f"### External Bureau Credit Scores (Layman's Terms)\n\n"
+                f"**External Credit Scores** (specifically `EXT_SOURCE_1`, `EXT_SOURCE_2`, and `EXT_SOURCE_3` in our model) "
+                f"are credit risk ratings sourced from external credit bureaus and databases (similar to FICO or credit bureau registries). "
+                f"They are normalized to range from **0.0 (highest risk)** to **1.0 (lowest risk)**.\n\n"
+                f"Here is how {name}'s external scores break down:\n"
+                f"- **EXT_SOURCE_1 = {ext1:.3f}** - {rate_score(ext1)}\n"
+                f"- **EXT_SOURCE_2 = {ext2:.3f}** - {rate_score(ext2)}\n"
+                f"- **EXT_SOURCE_3 = {ext3:.3f}** - {rate_score(ext3)}\n\n"
+                f"**Why they matter:** These scores are the single most important features in our CatBoost classification model. "
+                f"A higher score indicates a proven history of creditworthiness, which drastically pulls down the default probability. "
+                f"Conversely, lower scores trigger higher risk warnings."
+            )
+        elif any(w in q for w in ["ltv", "loan-to-value", "loan to value", "collateral"]):
+            ltv = prediction_results.get("scores", {}).get("ltv_ratio", 100.0)
+            return (
+                f"### Loan-to-Value (LTV) Ratio (Layman's Terms)\n\n"
+                f"The **Loan-to-Value (LTV) ratio** measures the size of the loan compared to the actual purchase value of the asset/property being financed.\n\n"
+                f"- **Formula:** (Requested Loan Amount / Collateral Asset Value) x 100%\n"
+                f"- **Applicant's LTV:** **{ltv:.1f}%**\n\n"
+                f"**What it means:** An LTV of 100% means the applicant is borrowing the entire value of the property (0% down payment), which is very risky for banks. "
+                f"A standard healthy benchmark is **80% or lower**, which means the applicant paid a **20% down payment**. "
+                f"This down payment serves as a cushion for the lender in case the loan default forces asset liquidation."
+            )
+        elif any(w in q for w in ["dti", "debt-to-income", "debt to income", "debt service", "annuity"]):
+            dti = prediction_results.get("scores", {}).get("dti_ratio", 0.0)
+            annuity_inc = prediction_results.get("scores", {}).get("annuity_to_income", 0.0) * 100.0
+            return (
+                f"### Debt-to-Income (DTI) and Annuity-to-Income (Layman's Terms)\n\n"
+                f"These metrics measure how much of the applicant's income is already spoken for by monthly debt obligations:\n\n"
+                f"1. **Annuity-to-Income ({annuity_inc:.1f}% for {name}):** "
+                f"This shows what percentage of gross income is consumed solely by the *proposed* loan payments. Ratios under 12% are highly favorable, while ratios over 25% indicate stress.\n"
+                f"2. **Total Debt-to-Income (DTI) ({dti:.1f}% for {name}):** "
+                f"This includes both the proposed loan payments AND the applicant's existing monthly obligations (estimated from outstanding bureau debt). "
+                f"A DTI below **40%** is the industry standard limit; anything higher indicates high risk of payment strain."
+            )
+        elif any(w in q for w in ["risk", "probability", "decision", "default"]):
+            return (
+                f"### Default Risk and Lending Decision (Layman's Terms)\n\n"
+                f"Our AI machine learning engine evaluates the probability that an applicant will default (i.e., fail to make payments for 90+ days):\n\n"
+                f"- **Default Probability:** **{prob*100:.1f}%** for {name}.\n"
+                f"- **Risk Category:** **{category}**.\n"
+                f"- **Lending Decision:** **{decision}**.\n\n"
+                f"**What it means:** The model evaluates all 30+ features (bureau history, scores, income, loan size, etc.) "
+                f"to calculate a percentage risk. Underwriting limits set critical action levels: "
+                f"approving clean files (under 20% risk), requesting review for borderline cases (20-75% risk), "
+                f"and rejecting high-risk files (above 75% risk)."
+            )
+            
+    # 2. General conversation triggers
     if "why" in q or "reason" in q or "reject" in q or "approve" in q:
         return f"The credit underwriting decision for {name} is {decision} with a default probability of {prob*100:.2f}% ({category}). The main factors influencing this include the external ratings and financial leverage ratios (Credit-to-Income: {prediction_results['scores']['credit_to_income']:.2f}, Annuity-to-Income: {prediction_results['scores']['annuity_to_income']*100:.1f}%)."
     elif "improve" in q or "recommend" in q or "how" in q:
@@ -691,7 +756,14 @@ def local_chat_responder(question, applicant_data, prediction_results, case_load
     elif "debt" in q or "income" in q or "ratio" in q:
         return f"For {name}, the Annual Income is ${applicant_data.get('income', 0.0):,.2f} and the Requested Loan is ${applicant_data.get('loan_amount', 0.0):,.2f}, resulting in a Credit-to-Income ratio of {prediction_results['scores']['credit_to_income']:.2f}. The outstanding bureau debt is ${applicant_data.get('total_debt', 0.0):,.2f}."
     elif "score" in q or "ext" in q or "bureau" in q:
-        return f"The applicant's external credit scores are: EXT_SOURCE_1 = {applicant_data.get('ext_source_1', 0.5):.3f}, EXT_SOURCE_2 = {applicant_data.get('ext_source_2', 0.5):.3f}, and EXT_SOURCE_3 = {applicant_data.get('ext_source_3', 0.5):.3f}. These ratings are the most heavily weighted features in the CatBoost classification model."
+        ext1 = applicant_data.get("ext_source_1", 0.5)
+        ext2 = applicant_data.get("ext_source_2", 0.5)
+        ext3 = applicant_data.get("ext_source_3", 0.5)
+        return (
+            f"The applicant's external credit scores are: EXT_SOURCE_1 = {ext1:.3f}, EXT_SOURCE_2 = {ext2:.3f}, and EXT_SOURCE_3 = {ext3:.3f}. "
+            f"These ratings represent creditworthiness scores from external credit databases normalized to a 0.0 - 1.0 scale. "
+            f"If you'd like a layman's explanation of what these scores represent, feel free to ask me to explain them!"
+        )
     else:
         return f"Hello! I am Aura Risk AI. I am here to help you analyze the underwriting decision for {name}. Ask me about their default risk ({prob*100:.1f}%), recommendations, or debt service capabilities."
 
