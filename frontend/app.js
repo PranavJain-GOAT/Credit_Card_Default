@@ -303,7 +303,149 @@ function renderDashboardUI(results) {
         li.innerText = rec;
         recList.appendChild(li);
     });
-    
+
+    // Populate Policy Compliance & Ratios and Bureau Credit Standing
+    const scores = results.scores || {};
+    const app = appState.activeApplicant || (results.debug ? results.debug.raw_inputs : {}) || {};
+
+    const dtiVal = scores.dti_ratio != null ? scores.dti_ratio : 0.0;
+    const ltvVal = scores.ltv_ratio != null ? scores.ltv_ratio : 0.0;
+    const creditIncomeVal = scores.credit_to_income != null ? scores.credit_to_income : 0.0;
+    const delinqVal = scores.delinquency_rate != null ? scores.delinquency_rate : 0.0;
+
+    const dtiEl = document.getElementById('diag-dti-val');
+    const dtiStatus = document.getElementById('diag-dti-status');
+    if (dtiEl && dtiStatus) {
+        dtiEl.innerText = `${dtiVal.toFixed(1)}%`;
+        if (dtiVal <= 40.0) {
+            dtiStatus.innerText = 'COMPLIANT';
+            dtiStatus.style.color = 'var(--success-color)';
+            dtiStatus.style.fontWeight = 'bold';
+        } else {
+            dtiStatus.innerText = 'BREACH';
+            dtiStatus.style.color = 'var(--danger-color)';
+            dtiStatus.style.fontWeight = 'bold';
+        }
+    }
+
+    const ltvEl = document.getElementById('diag-ltv-val');
+    const ltvStatus = document.getElementById('diag-ltv-status');
+    if (ltvEl && ltvStatus) {
+        ltvEl.innerText = `${ltvVal.toFixed(1)}%`;
+        if (ltvVal <= 80.0) {
+            ltvStatus.innerText = 'COMPLIANT';
+            ltvStatus.style.color = 'var(--success-color)';
+            ltvStatus.style.fontWeight = 'bold';
+        } else {
+            ltvStatus.innerText = 'BREACH';
+            ltvStatus.style.color = 'var(--danger-color)';
+            ltvStatus.style.fontWeight = 'bold';
+        }
+    }
+
+    const ciEl = document.getElementById('diag-credit-income-val');
+    const ciStatus = document.getElementById('diag-credit-income-status');
+    if (ciEl && ciStatus) {
+        ciEl.innerText = `${creditIncomeVal.toFixed(2)}x`;
+        if (creditIncomeVal <= 3.0) {
+            ciStatus.innerText = 'COMPLIANT';
+            ciStatus.style.color = 'var(--success-color)';
+            ciStatus.style.fontWeight = 'bold';
+        } else {
+            ciStatus.innerText = 'BREACH';
+            ciStatus.style.color = 'var(--danger-color)';
+            ciStatus.style.fontWeight = 'bold';
+        }
+    }
+
+    const delEl = document.getElementById('diag-delinq-val');
+    const delStatus = document.getElementById('diag-delinq-status');
+    if (delEl && delStatus) {
+        delEl.innerText = `${delinqVal.toFixed(1)}%`;
+        if (delinqVal <= 5.0) {
+            delStatus.innerText = 'COMPLIANT';
+            delStatus.style.color = 'var(--success-color)';
+            delStatus.style.fontWeight = 'bold';
+        } else {
+            delStatus.innerText = 'BREACH';
+            delStatus.style.color = 'var(--danger-color)';
+            delStatus.style.fontWeight = 'bold';
+        }
+    }
+
+    // Bureau Credit Standing
+    const ext1 = app.ext_source_1 != null ? parseFloat(app.ext_source_1) : 0.5;
+    const ext2 = app.ext_source_2 != null ? parseFloat(app.ext_source_2) : 0.5;
+    const ext3 = app.ext_source_3 != null ? parseFloat(app.ext_source_3) : 0.5;
+    const extAvg = (ext1 + ext2 + ext3) / 3;
+
+    const extEl = document.getElementById('diag-score-avg-val');
+    const extStatus = document.getElementById('diag-score-avg-status');
+    if (extEl && extStatus) {
+        extEl.innerText = extAvg.toFixed(3);
+        if (extAvg >= 0.60) {
+            extStatus.innerText = 'EXCELLENT';
+            extStatus.style.color = 'var(--success-color)';
+            extStatus.style.fontWeight = 'bold';
+        } else if (extAvg >= 0.50) {
+            extStatus.innerText = 'ACCEPTABLE';
+            extStatus.style.color = 'var(--warning-color)';
+            extStatus.style.fontWeight = 'bold';
+        } else {
+            extStatus.innerText = 'SUBSTANDARD';
+            extStatus.style.color = 'var(--danger-color)';
+            extStatus.style.fontWeight = 'bold';
+        }
+    }
+
+    const ageEl = document.getElementById('diag-credit-age-val');
+    const ageStatus = document.getElementById('diag-credit-age-status');
+    if (ageEl && ageStatus) {
+        const creditAge = app.avg_credit_age_days != null ? app.avg_credit_age_days : 0;
+        ageEl.innerText = `${Math.round(creditAge).toLocaleString()} days`;
+        if (creditAge >= 1000) {
+            ageStatus.innerText = 'COMPLIANT';
+            ageStatus.style.color = 'var(--success-color)';
+            ageStatus.style.fontWeight = 'bold';
+        } else {
+            ageStatus.innerText = 'SHORT';
+            ageStatus.style.color = 'var(--warning-color)';
+            ageStatus.style.fontWeight = 'bold';
+        }
+    }
+
+    const refEl = document.getElementById('diag-refused-val');
+    const refStatus = document.getElementById('diag-refused-status');
+    if (refEl && refStatus) {
+        const refused = app.refused_count != null ? app.refused_count : 0;
+        refEl.innerText = refused;
+        if (refused === 0) {
+            refStatus.innerText = 'COMPLIANT';
+            refStatus.style.color = 'var(--success-color)';
+            refStatus.style.fontWeight = 'bold';
+        } else {
+            refStatus.innerText = `BREACH (${refused})`;
+            refStatus.style.color = 'var(--danger-color)';
+            refStatus.style.fontWeight = 'bold';
+        }
+    }
+
+    const tenEl = document.getElementById('diag-tenure-val');
+    const tenStatus = document.getElementById('diag-tenure-status');
+    if (tenEl && tenStatus) {
+        const tenure = app.years_employed != null ? parseFloat(app.years_employed) : 0.0;
+        tenEl.innerText = `${tenure.toFixed(1)} yrs`;
+        if (tenure >= 3.0) {
+            tenStatus.innerText = 'COMPLIANT';
+            tenStatus.style.color = 'var(--success-color)';
+            tenStatus.style.fontWeight = 'bold';
+        } else {
+            tenStatus.innerText = 'SHORT';
+            tenStatus.style.color = 'var(--warning-color)';
+            tenStatus.style.fontWeight = 'bold';
+        }
+    }
+
     // SHAP Explainability Graph bars
     const shapContainer = document.getElementById('shap-contributions-container');
     shapContainer.innerHTML = '';
@@ -322,19 +464,14 @@ function renderDashboardUI(results) {
         
         const bar = document.createElement('div');
         // Map impact to visual width
-        // Assume max impact is around 3.0 for scale
-        const absVal = Math.min(100, Math.abs(contrib.impact) * 35);
+        // Max width from center is 50%
+        const absVal = Math.min(50, Math.abs(contrib.impact) * 45);
         bar.style.width = `${absVal}%`;
         
         if (contrib.impact >= 0) {
             bar.className = 'shap-bar positive';
-            // Align left side
-            bar.style.marginLeft = '50%';
         } else {
             bar.className = 'shap-bar negative';
-            // Align right side
-            bar.style.marginRight = '50%';
-            bar.style.transform = 'scaleX(-1)';
         }
         track.appendChild(bar);
         

@@ -140,7 +140,7 @@
                     <div class="card fill-height" style="display:flex;flex-direction:column;">
                         <div class="card-header">
                             <h3>Risk Assessment &amp; Executive Summary</h3>
-                            <button class="btn btn-secondary btn-sm" onclick="printReport()">
+                            <button class="btn btn-secondary btn-sm" onclick="window.print()">
                                 <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
                                 Export PDF
                             </button>
@@ -195,6 +195,101 @@
                         </div>
                     </div>
 
+                </div>
+
+                <!-- ════ RISK METRICS & POLICY DIAGNOSTICS ════ -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
+                    <!-- Policy Compliance Card -->
+                    <div class="card">
+                        <div class="card-header" style="padding:12px 16px;">
+                            <h3 style="font-size:12px; font-weight:700;">Credit Policy Compliance &amp; Ratios</h3>
+                            <span class="card-badge" style="background:var(--accent-muted);color:var(--accent);font-size:9px;padding:2px 6px;">Risk Diagnostics</span>
+                        </div>
+                        <div class="card-body" style="padding:12px 16px;">
+                            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                                <thead>
+                                    <tr style="border-bottom:1px solid var(--border); text-align:left; color:var(--text-muted); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">
+                                        <th style="padding:6px 0; font-weight:700;">Metric / Ratio</th>
+                                        <th style="padding:6px 0; text-align:center; font-weight:700;">Value</th>
+                                        <th style="padding:6px 0; text-align:center; font-weight:700;">Limit</th>
+                                        <th style="padding:6px 0; text-align:right; font-weight:700;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:8px 0; font-weight:600; color:var(--text-primary);">Debt-to-Income (DTI) Ratio</td>
+                                        <td style="padding:8px 0; text-align:center; font-family:var(--mono);" id="diag-dti-val">--%</td>
+                                        <td style="padding:8px 0; text-align:center; color:var(--text-muted);">&lt; 40.0%</td>
+                                        <td style="padding:8px 0; text-align:right;" id="diag-dti-status">--</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:8px 0; font-weight:600; color:var(--text-primary);">Loan-to-Value (LTV) Ratio</td>
+                                        <td style="padding:8px 0; text-align:center; font-family:var(--mono);" id="diag-ltv-val">--%</td>
+                                        <td style="padding:8px 0; text-align:center; color:var(--text-muted);">&lt; 80.0%</td>
+                                        <td style="padding:8px 0; text-align:right;" id="diag-ltv-status">--</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:8px 0; font-weight:600; color:var(--text-primary);">Credit-to-Income Ratio</td>
+                                        <td style="padding:8px 0; text-align:center; font-family:var(--mono);" id="diag-credit-income-val">--</td>
+                                        <td style="padding:8px 0; text-align:center; color:var(--text-muted);">&lt; 3.00x</td>
+                                        <td style="padding:8px 0; text-align:right;" id="diag-credit-income-status">--</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 0; font-weight:600; color:var(--text-primary);">Delinquency Rate</td>
+                                        <td style="padding:8px 0; text-align:center; font-family:var(--mono);" id="diag-delinq-val">--%</td>
+                                        <td style="padding:8px 0; text-align:center; color:var(--text-muted);">&lt; 5.0%</td>
+                                        <td style="padding:8px 0; text-align:right;" id="diag-delinq-status">--</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Underwriter Ratings Card -->
+                    <div class="card">
+                        <div class="card-header" style="padding:12px 16px;">
+                            <h3 style="font-size:12px; font-weight:700;">Bureau Credit Standing</h3>
+                            <span class="card-badge" style="background:var(--success-muted);color:var(--success);font-size:9px;padding:2px 6px;">Bureau standing</span>
+                        </div>
+                        <div class="card-body" style="padding:12px 16px;">
+                            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                                <thead>
+                                    <tr style="border-bottom:1px solid var(--border); text-align:left; color:var(--text-muted); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">
+                                        <th style="padding:6px 0; font-weight:700;">Parameter</th>
+                                        <th style="padding:6px 0; text-align:center; font-weight:700;">Applicant</th>
+                                        <th style="padding:6px 0; text-align:center; font-weight:700;">Benchmark</th>
+                                        <th style="padding:6px 0; text-align:right; font-weight:700;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:8px 0; font-weight:600; color:var(--text-primary);">External Score Average</td>
+                                        <td style="padding:8px 0; text-align:center; font-family:var(--mono);" id="diag-score-avg-val">--</td>
+                                        <td style="padding:8px 0; text-align:center; color:var(--text-muted);">&gt; 0.600</td>
+                                        <td style="padding:8px 0; text-align:right;" id="diag-score-avg-status">--</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:8px 0; font-weight:600; color:var(--text-primary);">Average Credit Age</td>
+                                        <td style="padding:8px 0; text-align:center; font-family:var(--mono);" id="diag-credit-age-val">-- days</td>
+                                        <td style="padding:8px 0; text-align:center; color:var(--text-muted);">&gt; 1,000 d</td>
+                                        <td style="padding:8px 0; text-align:right;" id="diag-credit-age-status">--</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:8px 0; font-weight:600; color:var(--text-primary);">Prior Credit Refusals</td>
+                                        <td style="padding:8px 0; text-align:center; font-family:var(--mono);" id="diag-refused-val">--</td>
+                                        <td style="padding:8px 0; text-align:center; color:var(--text-muted);">0</td>
+                                        <td style="padding:8px 0; text-align:right;" id="diag-refused-status">--</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 0; font-weight:600; color:var(--text-primary);">Employment Tenure</td>
+                                        <td style="padding:8px 0; text-align:center; font-family:var(--mono);" id="diag-tenure-val">-- yrs</td>
+                                        <td style="padding:8px 0; text-align:center; color:var(--text-muted);">&gt; 3.0 yrs</td>
+                                        <td style="padding:8px 0; text-align:right;" id="diag-tenure-status">--</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- SHAP + Recommendations -->
@@ -508,6 +603,14 @@
             </div>
 
             <div id="analysis-grid" style="display:none;">
+                <!-- Header Block with Export Button -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.08em;">Institutional Underwriting Diagnostics</div>
+                    <button class="btn btn-secondary btn-sm" onclick="window.print()">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                        Export PDF
+                    </button>
+                </div>
 
                 <!-- Row 1: Health Scorecards + Radar -->
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">

@@ -399,37 +399,56 @@ def predict_credit_risk(inputs):
     recommendations = []
     
     # 1. External Scores
-    if min(ext_1, ext_2, ext_3) < 0.4:
-        recommendations.append(f"Improve external credit bureau rating (currently low at {min(ext_1, ext_2, ext_3):.2f}) by disputing inaccuracies and maintaining low credit card utilization.")
+    min_ext = min(ext_1, ext_2, ext_3)
+    if min_ext < 0.4:
+        collateral_pledge = credit * 0.20
+        recommendations.append(f"The minimum external credit rating is low at {min_ext:.3f}. Provide credit enhancement (such as an institutional guarantor or a ${collateral_pledge:,.0f} collateral pledge) to offset bureau rating weaknesses.")
     
     # 2. Leverage/Credit-to-Income
     if credit_income_ratio > 3.0:
-        recommendations.append(f"Reduce the requested loan amount of ${credit:,.2f} or verify secondary income streams to lower the leverage ratio from {credit_income_ratio:.2f} toward the target threshold of 2.00.")
+        target_limit = income * 2.0
+        reduction = credit - target_limit
+        recommendations.append(f"Requested loan amount of ${credit:,.2f} represents a high leverage multiple of {credit_income_ratio:.2f}x annual income. Restructure exposure downward by ${reduction:,.0f} to reach the low-risk limit of ${target_limit:,.0f}.")
         
     # 3. Debt Service / Annuity-to-Income
     if annuity_income_ratio > 0.15:
-        recommendations.append(f"Extend the loan repayment term or request a smaller principal to decrease the monthly debt service burden from {annuity_income_ratio*100:.1f}% of income down below 12%.")
+        target_max_annuity = income * 0.12
+        reduction_monthly = (annuity - target_max_annuity) / 12.0
+        recommendations.append(f"Proposed monthly debt service of ${annuity/12.0:,.0f} is {annuity_income_ratio*100:.1f}% of income. Extend the amortization term or reduce principal to lower the monthly burden by ${reduction_monthly:,.0f}/mo (targeting a <12.0% ratio).")
         
     # 4. Late Payments
     if late_rate > 0.05 or late_count > 0:
-        recommendations.append(f"Set up automated payment transfers on all credit accounts to address the {late_rate*100:.1f}% late payment rate and clear the history of {late_count} late payments (averaging {avg_days_late:.1f} days late).")
+        recommendations.append(f"Set up automated payment transfers on all active accounts to address the {late_rate*100:.1f}% late payment rate and clear the history of {late_count} payment delays (averaging {avg_days_late:.1f} days late).")
         
     # 5. Employment Tenure
     if years_employed < 3.0:
-        recommendations.append(f"Strengthen employment stability score by maintaining the current role (currently {years_employed:.1f} years tenure) to reach the low-risk underwriting benchmark of 3.0+ years.")
+        months_needed = max(1, int((3.0 - years_employed) * 12))
+        recommendations.append(f"Maintain the current state employment role (currently {years_employed:.1f} yrs tenure) for at least {months_needed} more months to reach the low-risk underwriting benchmark of 3.0+ years.")
         
     # 6. Outstanding Debt
     if total_debt > 20000:
-        recommendations.append(f"Pay down a portion of the current outstanding bureau debt (${total_debt:,.2f}) to improve the liability-to-income ratio and free up borrowing capacity.")
+        debt_reduction = total_debt - 10000
+        recommendations.append(f"Pay down a minimum of ${debt_reduction:,.0f} of the current outstanding bureau debt (${total_debt:,.2f}) to improve overall credit capacity and DTI ratios.")
         
     # 7. Refused prior apps
     if refused_count > 0:
-        recommendations.append(f"Refrain from submitting new credit requests for the next 6 months to let the {refused_count} historical credit rejections age out of active bureau queries.")
+        cooling_off = max(6, refused_count * 4)
+        recommendations.append(f"Observe a cooling-off period of {cooling_off} months before submitting new credit queries to allow the {refused_count} historical bureau refusals to age out of active scoring models.")
+
+    # 8. Debt-to-Income (DTI)
+    if dti_ratio > 40.0:
+        debt_reduction_needed = total_monthly_obligations - (monthly_income * 0.40)
+        recommendations.append(f"The applicant's DTI ratio is high at {dti_ratio:.1f}%. Reduce active monthly non-proposed debt service obligations by ${debt_reduction_needed:,.0f}/mo or increase verified income to bring DTI under the 40.0% policy limit.")
+
+    # 9. Loan-to-Value (LTV)
+    if ltv_ratio > 80.0:
+        downpayment_needed = credit - (goods_price * 0.80)
+        recommendations.append(f"The loan-to-value (LTV) ratio is elevated at {ltv_ratio:.1f}%. Inject an additional down payment of ${downpayment_needed:,.0f} to lower LTV to the standard institutional benchmark of 80.0% or lower.")
 
     # Fallbacks if list is too short
     if len(recommendations) < 3:
-        recommendations.append(f"Maintain the current excellent debt service margin (annuity is only {annuity_income_ratio*100:.1f}% of income) by avoiding new credit lines.")
-        recommendations.append(f"Continue consistent repayment behavior to preserve the current low default probability of {risk_score}%.")
+        recommendations.append(f"Maintain a low debt-servicing profile by ensuring the proposed annuity does not exceed 12.0% of gross income (currently {annuity_income_ratio*100:.1f}%).")
+        recommendations.append(f"To maintain the low default probability score of {risk_score}%, ensure no active accounts exceed a 30% utilization rate and continue paying monthly balances in full.")
         
     # Natively compute SHAP values for local explainability
     pool = Pool(df_pred)

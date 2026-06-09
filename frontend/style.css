@@ -1495,15 +1495,134 @@ a { text-decoration: none; color: inherit; }
    PRINT REPORT — PDF Shell
    ════════════════════════════════════ */
 @media print {
-    .app-container, .sidebar, .content-header,
-    .chat-widget-container, .modal-overlay { display: none !important; }
+    /* Hide layout controls, sidebars, buttons and widgets */
+    .sidebar,
+    .content-header,
+    .chat-widget-container,
+    .header-actions,
+    .btn,
+    .welcome-card,
+    #printable-report-shell,
+    .modal-overlay,
+    .theme-switch {
+        display: none !important;
+    }
 
-    #printable-report-shell {
+    /* Reset background and layout for clean page rendering */
+    body, .app-container, .main-content {
+        background: #ffffff !important;
+        color: #0f1923 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
         display: block !important;
-        padding: 0;
-        font-family: 'IBM Plex Sans', 'Times New Roman', serif;
-        font-size: 10pt;
-        color: #111;
+        box-shadow: none !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Print only the active tab */
+    .tab-pane {
+        display: none !important;
+    }
+    .tab-pane.active {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* Style cards for high contrast print readability */
+    .card {
+        background: #ffffff !important;
+        color: #0f1923 !important;
+        border: 1px solid #dde2ea !important;
+        box-shadow: none !important;
+        margin-bottom: 20px !important;
+        padding: 16px !important;
+        page-break-inside: avoid !important;
+    }
+
+    .card-header {
+        border-bottom: 1px solid #dde2ea !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .card-header h3 {
+        color: #0f1923 !important;
+    }
+
+    .kpi-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 12px !important;
+        margin-bottom: 20px !important;
+        page-break-inside: avoid !important;
+    }
+
+    .kpi-card {
+        background: #f8fafc !important;
+        border: 1px solid #dde2ea !important;
+        color: #0f1923 !important;
+        box-shadow: none !important;
+        padding: 12px !important;
+        page-break-inside: avoid !important;
+    }
+
+    .kpi-card.kpi-danger { border-top: 4px solid var(--danger) !important; }
+    .kpi-card.kpi-success { border-top: 4px solid var(--success) !important; }
+    .kpi-card.kpi-accent { border-top: 4px solid var(--accent) !important; }
+    .kpi-card.highlight-card { border-top: 4px solid var(--accent) !important; }
+
+    .kpi-value {
+        color: #0f1923 !important;
+    }
+
+    /* Align layout rows */
+    .dashboard-row.col-8-4 {
+        display: grid !important;
+        grid-template-columns: 2fr 1fr !important;
+        gap: 16px !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* Print compliance grid and rating cards correctly */
+    .card-body table {
+        width: 100% !important;
+        color: #0f1923 !important;
+    }
+
+    th {
+        color: #5a6474 !important;
+        border-bottom: 1px solid #dde2ea !important;
+    }
+
+    td {
+        border-bottom: 1px solid #f1f5f9 !important;
+        color: #0f1923 !important;
+    }
+
+    /* SHAP tracks in print */
+    .shap-track {
+        background: #f1f5f9 !important;
+        border: 1px solid #dde2ea !important;
+    }
+
+    .shap-feat-name {
+        color: #0f1923 !important;
+    }
+
+    .shap-feat-val {
+        color: #5a6474 !important;
+    }
+
+    /* Ensure chart backgrounds print */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 }
 
