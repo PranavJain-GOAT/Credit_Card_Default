@@ -1,5 +1,12 @@
 // Aura Credit Risk Intelligence Platform - Frontend Script
 
+// Application Configuration
+const CONFIG = {
+    // If hosting frontend on Vercel and backend on Render, set this to your Render URL (e.g. 'https://nexus-risk.onrender.com')
+    // Otherwise, leave empty to use relative paths for local development or unified servers.
+    API_BASE_URL: ''
+};
+
 // Global Application State
 let appState = {
     theme: 'dark',
@@ -197,7 +204,7 @@ function submitUnderwrite(event) {
     const inputs = getFormValues();
     appState.activeApplicant = inputs;
     
-    fetch('/api/predict', {
+    fetch(CONFIG.API_BASE_URL + '/api/predict', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -959,7 +966,7 @@ function sendChatMessage(event) {
         scores: { credit_to_income: 0.0, annuity_to_income: 0.0 } 
     };
     
-    fetch('/api/chat', {
+    fetch(CONFIG.API_BASE_URL + '/api/chat', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -1004,7 +1011,7 @@ function loadPredictionHistory() {
     const search = (document.getElementById('history-search') || {}).value || '';
     const sort = (document.getElementById('history-sort') || {}).value || 'newest';
 
-    fetch('/api/history', {
+    fetch(CONFIG.API_BASE_URL + '/api/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ search, sort })
@@ -1061,7 +1068,7 @@ function loadPredictionHistory() {
 }
 
 function openDetailsModal(id) {
-    fetch('/api/history', {
+    fetch(CONFIG.API_BASE_URL + '/api/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
@@ -1168,7 +1175,7 @@ function deleteFromModal() {
     if (!confirm(`Delete prediction record for "${_currentDetailRecord.applicant_name}"? This cannot be undone.`)) return;
 
     const id = _currentDetailRecord.id;
-    fetch('/api/history/delete', {
+    fetch(CONFIG.API_BASE_URL + '/api/history/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
