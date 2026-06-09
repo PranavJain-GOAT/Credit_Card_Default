@@ -626,7 +626,7 @@ def X_eval_mode(col):
 def call_gemini_api(api_key, system_instruction, user_prompt):
     import urllib.request
     import urllib.error
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
     payload = {
         "contents": [
             {
@@ -808,6 +808,10 @@ class CreditRiskHandler(http.server.SimpleHTTPRequestHandler):
                             f"Prediction Metrics: {json.dumps(pred_results_clean)}."
                         )
                     reply = call_gemini_api(api_key, system_instruction, question)
+                    if reply.startswith("Error calling Gemini API:"):
+                        print(f"[Nexus Risk] Gemini API call failed: {reply}")
+                        print("[Nexus Risk] Gracefully falling back to local rule-based advisor.")
+                        reply = local_chat_responder(question, applicant_data, prediction_results, case_loaded)
                 else:
                     reply = local_chat_responder(question, applicant_data, prediction_results, case_loaded)
                 
