@@ -611,6 +611,7 @@ function renderAnalysisCharts() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: (appState.printingThemeTemp !== undefined || appState.isPrinting) ? false : { duration: 800 },
             scales: {
                 r: {
                     angleLines: { color: gridColor },
@@ -671,6 +672,7 @@ function renderAnalysisCharts() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: (appState.printingThemeTemp !== undefined || appState.isPrinting) ? false : { duration: 800 },
             scales: {
                 x: {
                     grid: { display: false },
@@ -787,26 +789,53 @@ function toggleTheme() {
     }
 }
 
-// Print event listeners to temporarily force light theme for clean high-contrast exports
+// Print event listeners to temporarily force light theme for clean high-contrast exports and show tabs for size calculation
 window.addEventListener('beforeprint', () => {
+    // Temporarily make all tabs display block so Chart.js can calculate correct element sizes
+    const panes = document.querySelectorAll('.tab-pane');
+    panes.forEach(pane => {
+        pane.style.display = 'block';
+        pane.style.opacity = '1';
+        pane.style.transform = 'none';
+        pane.style.visibility = 'visible';
+    });
+
     if (appState.theme === 'dark') {
         appState.printingThemeTemp = 'dark';
         appState.theme = 'light';
         document.documentElement.setAttribute('data-theme', 'light');
-        if (appState.predictionResults) {
-            renderAnalysisCharts();
-        }
+    }
+    
+    appState.isPrinting = true;
+    
+    if (appState.predictionResults) {
+        renderAnalysisCharts();
     }
 });
 
 window.addEventListener('afterprint', () => {
+    // Clear temporary display overrides
+    const panes = document.querySelectorAll('.tab-pane');
+    panes.forEach(pane => {
+        pane.style.display = '';
+        pane.style.opacity = '';
+        pane.style.transform = '';
+        pane.style.visibility = '';
+    });
+
     if (appState.printingThemeTemp === 'dark') {
         appState.theme = 'dark';
         document.documentElement.setAttribute('data-theme', 'dark');
-        if (appState.predictionResults) {
-            renderAnalysisCharts();
-        }
         delete appState.printingThemeTemp;
+    }
+    
+    appState.isPrinting = false;
+    
+    // Restore proper active screen tab layout
+    switchTab(appState.currentTab);
+    
+    if (appState.predictionResults) {
+        renderAnalysisCharts();
     }
 });
 
