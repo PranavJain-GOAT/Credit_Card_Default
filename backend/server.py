@@ -626,7 +626,7 @@ def X_eval_mode(col):
 def call_gemini_api(api_key, system_instruction, user_prompt):
     import urllib.request
     import urllib.error
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
     payload = {
         "contents": [
             {
