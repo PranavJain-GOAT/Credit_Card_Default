@@ -1,36 +1,42 @@
-# Local environment variables
+# ── Secrets ───────────────────────────────────────────────────
 .env
 backend/.env
+*.key
 
-# Python cache files
+# ── Python cache ──────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.ipynb_checkpoints/
+.Python
 
-# IDE files
-.vscode/
-.idea/
-
-# Database files
-*.db
-backend/*.db
-
-# Helper scripts
-backend/check_db.py
-backend/test_predict.py
-
-# Large datasets (never commit)
-home-credit-default-risk/
+# ── Datasets (NEVER commit — too large) ──────────────────────
 *.csv
+*.parquet
+*.feather
+home-credit-default-risk/
 
-# MLflow artifacts (too large for git)
-mlruns/
-
-# Jupyter notebooks (training artifacts)
+# ── Jupyter Notebooks (research only) ─────────────────────────
 research/
 *.ipynb
+.ipynb_checkpoints/
 
-# Logs
+# ── MLflow runs (local only, not for git) ─────────────────────
+mlruns/
+mlartifacts/
+
+# ── Database (ephemeral — Render regenerates on deploy) ───────
+*.db
+
+# ── IDE / OS ──────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────
 *.log
+
+# ── Helper / scratch scripts ──────────────────────────────────
+backend/check_db.py
+backend/test_predict.py
