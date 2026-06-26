@@ -1,12 +1,16 @@
 # Nexus Risk — AI-Powered Credit Risk Underwriting Platform
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-2.0-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![CatBoost](https://img.shields.io/badge/CatBoost-ROC--AUC%200.774-yellow)](https://catboost.ai)
-[![MLflow](https://img.shields.io/badge/MLflow-Experiment%20Tracking-blue)](https://mlflow.org)
-[![Docker](https://img.shields.io/badge/Docker-Containerised-2496ED?logo=docker)](https://docker.com)
-[![Optuna](https://img.shields.io/badge/Optuna-Bayesian%20Tuning-purple)](https://optuna.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![CatBoost](https://img.shields.io/badge/CatBoost-ROC--AUC%200.774-F7931E)](https://catboost.ai)
+[![MLflow](https://img.shields.io/badge/MLflow-Tracking-0194E2)](https://mlflow.org)
+[![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render)](https://render.com)
+[![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://python.org)
 
-A production-grade credit risk intelligence platform that serves real-time loan default predictions via a Dockerized FastAPI inference service. Built on CatBoost trained across 307K applicants with 145 handcrafted features, SHAP explainability, and a live What-If scenario simulator.
+A production-grade credit risk intelligence platform that serves real-time loan default predictions via a FastAPI inference service deployed on Render. Built on CatBoost trained across 307K applicants with 145 handcrafted features, SHAP explainability, What-If scenario simulation, and Gemini AI-powered risk Q&A.
+
+**Live Demo:** [nexus-risk.vercel.app](https://nexus-risk.vercel.app)  
+**API Docs:** [credit-card-default-3xnc.onrender.com/docs](https://credit-card-default-3xnc.onrender.com/docs)
 
 ---
 
@@ -14,28 +18,33 @@ A production-grade credit risk intelligence platform that serves real-time loan 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                  Vanilla JS Dashboard                   │
-│   What-If Sliders │ SHAP Charts │ Gemini AI Chatbot     │
+│              Vanilla JS Dashboard (Vercel)               │
+│   What-If Sliders  │  SHAP Charts  │  Gemini AI Chat    │
 └──────────────────────────┬──────────────────────────────┘
                            │  HTTP/JSON
 ┌──────────────────────────▼──────────────────────────────┐
-│              FastAPI Inference Service                   │
-│  POST /api/predict   POST /api/batch   GET /api/health  │
-│  POST /api/chat      POST /api/history                  │
-│  Swagger Docs at /docs                                  │
-└───────────┬───────────────────────┬─────────────────────┘
-            │                       │
-┌───────────▼──────────┐  ┌────────▼────────────────────┐
-│  CatBoost Model      │  │  SQLite Audit Log            │
-│  + SHAP TreeExplainer│  │  (predictions + decisions)   │
-│  + Counterfactuals   │  └─────────────────────────────┘
-│  catboost_v1.pkl     │
-└──────────────────────┘
-            │
-┌───────────▼──────────┐
-│  Gemini 2.5 Flash    │
-│  Lite AI Chatbot     │
-└──────────────────────┘
+│           FastAPI Inference Service (Render)             │
+│                                                          │
+│   POST /api/predict    →  Single prediction              │
+│   POST /api/batch      →  CSV bulk inference             │
+│   GET  /api/health     →  Health check                   │
+│   POST /api/chat       →  Gemini AI chatbot              │
+│   GET  /api/history    →  Audit log                      │
+│                                                          │
+│   Swagger UI at /docs                                    │
+└────────────┬──────────────────────┬─────────────────────┘
+             │                      │
+┌────────────▼──────────┐  ┌───────▼─────────────────────┐
+│  CatBoost Model       │  │  SQLite Audit Log            │
+│  + SHAP TreeExplainer │  │  (every prediction logged)   │
+│  + Counterfactuals    │  └─────────────────────────────┘
+└───────────────────────┘
+             │
+┌────────────▼──────────┐
+│  Gemini 2.5 Flash     │
+│  AI Risk Chatbot      │
+│  + Local fallback     │
+└───────────────────────┘
 ```
 
 ---
@@ -44,125 +53,14 @@ A production-grade credit risk intelligence platform that serves real-time loan 
 
 | Feature | Description |
 |---|---|
-| **FastAPI REST API** | `/predict`, `/batch`, `/health` with Swagger auto-docs |
-| **145 handcrafted features** | DTI, LTV, bureau aggregations, delinquency rate, installment consistency |
-| **CatBoost (ROC-AUC 0.774)** | +12.5% over Logistic Regression baseline (0.649) |
-| **Threshold optimisation** | 0.5 → 0.15, recall 18% → **43.5%** on 8.07% imbalanced class |
+| **Real-time prediction** | CatBoost inference with 145-feature pipeline in ~200ms |
 | **SHAP explainability** | Top-7 feature contributions per prediction |
-| **What-If Simulator** | Live sliders recompute probability + SHAP instantly |
-| **Counterfactual paths** | "Reduce debt by ₹X → reach REVIEW tier" |
-| **MLflow tracking** | Experiments, params, metrics, model registry |
-| **Optuna tuning** | Bayesian search over 50 trials (depth, LR, L2) |
-| **Gemini 2.5 AI chatbot** | Natural language risk Q&A with local fallback |
-| **Batch inference** | CSV upload → bulk predictions download |
-| **Docker** | One-command deployment |
-
----
-
-## Quickstart
-
-### Option 1 — Docker (Recommended)
-
-```bash
-# Clone and navigate
-git clone https://github.com/your-username/nexus-risk.git
-cd nexus-risk
-
-# Set your Gemini API key (optional — platform works without it)
-export GEMINI_API_KEY=your_key_here
-
-# Start everything
-docker-compose up --build
-
-# Open the platform
-open http://localhost:8000
-
-# View API docs
-open http://localhost:8000/docs
-```
-
-### Option 2 — Local Development
-
-```bash
-cd backend
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run FastAPI server
-python main.py
-
-# Open platform
-open http://localhost:8000
-```
-
----
-
-## API Reference
-
-### POST `/api/predict`
-Single applicant credit risk inference.
-
-**Request:**
-```json
-{
-  "name": "John Doe",
-  "age": 35,
-  "income": 75000,
-  "loan_amount": 250000,
-  "ext_source_2": 0.62,
-  "late_payment_rate": 0.02,
-  "total_debt": 15000
-}
-```
-
-**Response:**
-```json
-{
-  "default_probability": 0.24,
-  "risk_category": "Medium Risk",
-  "decision": "REVIEW",
-  "contributions": [{"feature": "External Credit Score 2", "impact": -0.18, "value": "0.62"}],
-  "counterfactuals": [{"action": "Increase annual income", "change_needed": "by ₹12,000 (+16%)", "new_tier": "APPROVE"}],
-  "scores": {"dti_ratio": 32.4, "ltv_ratio": 78.1}
-}
-```
-
-### POST `/api/batch`
-Upload CSV → bulk predictions.
-
-```bash
-curl -X POST http://localhost:8000/api/batch \
-  -F "file=@applicants.csv"
-```
-
-### GET `/api/health`
-```json
-{"status": "ok", "model": "catboost_v1", "features": 145, "version": "2.0.0"}
-```
-
----
-
-## Model Training
-
-```bash
-cd backend
-
-# Train with MLflow tracking + Optuna hyperparameter search
-python models/train.py
-
-# View MLflow experiment dashboard
-mlflow ui
-# Open http://localhost:5000
-```
-
-Training pipeline:
-1. Merges 4 Home Credit datasets (307K applicants)
-2. Engineers 145 features (DTI, bureau aggregations, payment consistency)
-3. Benchmarks 5 classifiers (LR, RF, XGBoost, LightGBM, CatBoost)
-4. Runs Optuna Bayesian search over 50 trials
-5. Logs all metrics, params, and model artifacts to MLflow
-6. Registers best model in MLflow Model Registry
+| **What-If Simulator** | Live sliders recompute probability instantly |
+| **Counterfactual paths** | "Do X to reach next approval tier" |
+| **Batch inference** | Upload CSV → download bulk predictions |
+| **Gemini AI chatbot** | Natural language credit risk Q&A |
+| **Audit logging** | Every prediction saved to SQLite |
+| **Auto API docs** | Swagger UI auto-generated at `/docs` |
 
 ---
 
@@ -176,15 +74,14 @@ Training pipeline:
 | LightGBM | 0.772 |
 | **CatBoost (selected)** | **0.774** |
 
-**Threshold Analysis:**
+**Threshold Optimisation** — default class is 8.07% of dataset (imbalanced):
 
-| Threshold | Recall | Precision | F1 |
-|---|---|---|---|
-| 0.50 (default) | ~18% | High | Low |
-| **0.15 (selected)** | **43.5%** | 25.5% | 32.1% |
-| 0.10 | 62.4% | 20.0% | 30.2% |
+| Threshold | Recall on defaulters | Precision |
+|---|---|---|
+| 0.50 (default) | ~18% | High |
+| **0.15 (selected)** | **43.5%** | 25.5% |
 
-CatBoost was selected over XGBoost for its native handling of high-cardinality categorical features without encoding overhead.
+CatBoost selected over XGBoost for native handling of high-cardinality categoricals without one-hot encoding.
 
 ---
 
@@ -195,56 +92,147 @@ nexus-risk/
 ├── backend/
 │   ├── main.py                    ← FastAPI entry point
 │   ├── config.py                  ← Paths, thresholds, model loading
+│   ├── runtime.txt                ← Python 3.11.9 for Render
+│   ├── requirements.txt           ← Dependencies
+│   ├── catboost_credit_risk.pkl   ← Trained model (145 features)
+│   ├── feature_columns.pkl        ← Ordered feature list
+│   ├── feature_defaults.json      ← Default values per feature
+│   ├── category_mappings.json     ← Categorical encodings
 │   ├── routes/
 │   │   ├── predict.py             ← /predict, /batch, /health
 │   │   ├── chat.py                ← /chat (Gemini AI)
-│   │   └── history.py             ← /history, /history/delete
+│   │   └── history.py             ← /history
 │   ├── services/
-│   │   ├── prediction_service.py  ← Feature engineering + CatBoost inference
+│   │   ├── prediction_service.py  ← 145-feature pipeline + CatBoost inference
 │   │   ├── shap_service.py        ← SHAP TreeExplainer
 │   │   ├── gemini_service.py      ← Gemini API + local fallback
 │   │   └── db_service.py          ← SQLite audit logging
 │   ├── schemas/
 │   │   └── applicant.py           ← Pydantic request/response models
-│   ├── models/
-│   │   └── train.py               ← MLflow + Optuna training pipeline
-│   ├── catboost_credit_risk.pkl   ← Trained model
-│   └── requirements.txt
+│   └── models/
+│       └── train.py               ← MLflow + Optuna training pipeline
 ├── frontend/
 │   ├── index.html                 ← Dashboard UI
-│   ├── app.js                     ← Vanilla JS logic + What-If simulator
-│   └── style.css                  ← IBM Plex Sans enterprise design system
-├── Dockerfile
-├── docker-compose.yml
+│   ├── app.js                     ← Vanilla JS + What-If simulator
+│   └── style.css                  ← Design system
+├── research/
+│   └── Credit_Risk_Prediction.ipynb  ← EDA + training notebook
+├── render.yaml                    ← Render deployment config
+├── vercel.json                    ← Vercel deployment config
 └── README.md
 ```
 
 ---
 
-## Interview Q&A
+## API Reference
 
-**Why CatBoost over XGBoost?**
-CatBoost handles high-cardinality categorical features (NAME_INCOME_TYPE, NAME_EDUCATION_TYPE) natively without one-hot encoding, reducing preprocessing complexity and training time on 300K rows.
+### `POST /api/predict`
 
-**Why threshold 0.15?**
-The dataset has 8.07% default rate (severely imbalanced). At the default 0.5 threshold, recall was ~18% — the model missed most actual defaulters. A precision-recall tradeoff analysis (logged in MLflow) showed 0.15 maximizes recall (43.5%) while keeping precision above 25%, acceptable for a human-review workflow.
+```bash
+curl -X POST https://credit-card-default-3xnc.onrender.com/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John Doe","age":35,"income":75000,"loan_amount":250000,"ext_source_2":0.62}'
+```
 
-**Why ROC-AUC over PR-AUC?**
-ROC-AUC is used for model selection as it measures discriminative ability across all thresholds. PR-AUC is included in threshold analysis where class imbalance matters.
+**Response:**
+```json
+{
+  "default_probability": 0.24,
+  "risk_category": "Medium Risk",
+  "decision": "REVIEW",
+  "decision_color": "#f59e0b",
+  "risk_score": 24.0,
+  "contributions": [
+    {"feature": "External Credit Score 2", "impact": -0.18, "value": "0.62"}
+  ],
+  "counterfactuals": [
+    {"action": "Increase annual income", "change_needed": "by ₹7,500 (+10%)", "new_tier": "APPROVE", "new_probability": "18.2"}
+  ],
+  "scores": {"dti_ratio": 32.4, "ltv_ratio": 78.1, "credit_to_income": 3.33}
+}
+```
 
-**How does the What-If simulator work?**
-The frontend sliders send modified inputs to `/api/predict`. The backend applies co-variance scaling — if loan amount changes, annuity and goods price scale proportionally. The full 145-feature vector is recomputed and CatBoost returns a new probability in under 200ms.
+### `POST /api/batch`
 
-**How would you retrain monthly?**
-`python models/train.py` — MLflow tracks the new run, registers a new model version, and the old version remains in the registry for rollback.
+```bash
+curl -X POST https://credit-card-default-3xnc.onrender.com/api/batch \
+  -F "file=@applicants.csv"
+```
+
+### `GET /api/health`
+
+```json
+{"status": "ok", "model": "catboost_v1", "features": 145, "version": "2.0.0"}
+```
+
+---
+
+## Running Locally
+
+```bash
+# Clone
+git clone https://github.com/PranavJain-GOAT/Credit_Card_Default.git
+cd Credit_Card_Default/backend
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Add Gemini key (optional)
+echo "GEMINI_API_KEY=your_key_here" > .env
+
+# Start server
+python main.py
+
+# Open platform
+# http://localhost:8000
+# http://localhost:8000/docs  ← Swagger UI
+```
+
+---
+
+## Training Pipeline
+
+```bash
+# Install training dependencies
+pip install mlflow optuna lightgbm xgboost
+
+# Train (MLflow tracking + Optuna 50-trial Bayesian search)
+cd backend
+python models/train.py
+
+# View experiment dashboard
+mlflow ui
+# Open http://localhost:5000
+```
+
+Training steps:
+1. Merges 4 Home Credit datasets (307K applicants)
+2. Engineers 145 features (DTI, LTV, bureau aggregations, payment consistency)
+3. Benchmarks 5 classifiers with cross-validation
+4. Runs Optuna Bayesian search over 50 trials (depth, LR, L2, border_count)
+5. Logs all metrics, parameters, and model artifacts to MLflow
+6. Registers best model in MLflow Model Registry
+
+---
+
+## Deployment
+
+| Service | Platform | Config |
+|---|---|---|
+| **Backend (FastAPI)** | Render | `render.yaml` |
+| **Frontend (Vanilla JS)** | Vercel | `vercel.json` |
+
+Auto-deploys on every `git push` to `main`.
 
 ---
 
 ## Tech Stack
 
-**ML:** CatBoost, SHAP, Optuna, MLflow, Pandas, NumPy, scikit-learn  
-**API:** FastAPI, Uvicorn, Pydantic  
-**Frontend:** Vanilla JS, Chart.js, IBM Plex Sans  
-**AI:** Gemini 2.5 Flash Lite  
-**Storage:** SQLite  
-**DevOps:** Docker, docker-compose
+| Layer | Tech |
+|---|---|
+| **ML** | CatBoost, SHAP, Optuna, MLflow, scikit-learn, pandas, numpy |
+| **API** | FastAPI, Uvicorn, Pydantic |
+| **Frontend** | Vanilla JS, Chart.js, IBM Plex Sans |
+| **AI** | Gemini 2.5 Flash Lite |
+| **Storage** | SQLite |
+| **Deploy** | Render (backend) + Vercel (frontend) |

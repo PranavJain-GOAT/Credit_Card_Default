@@ -8,7 +8,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
 
 # ── Datasets (NEVER commit — too large) ──────────────────────
 *.csv
@@ -16,16 +15,14 @@ __pycache__/
 *.feather
 home-credit-default-risk/
 
-# ── Jupyter Notebooks (research only) ─────────────────────────
-research/
-*.ipynb
+# ── Jupyter Notebooks (research only, already tracked) ────────
 .ipynb_checkpoints/
 
-# ── MLflow runs (local only, not for git) ─────────────────────
+# ── MLflow runs (local only) ──────────────────────────────────
 mlruns/
 mlartifacts/
 
-# ── Database (ephemeral — Render regenerates on deploy) ───────
+# ── Database (auto-created on server) ─────────────────────────
 *.db
 
 # ── IDE / OS ──────────────────────────────────────────────────
@@ -36,7 +33,3 @@ Thumbs.db
 
 # ── Logs ──────────────────────────────────────────────────────
 *.log
-
-# ── Helper / scratch scripts ──────────────────────────────────
-backend/check_db.py
-backend/test_predict.py
