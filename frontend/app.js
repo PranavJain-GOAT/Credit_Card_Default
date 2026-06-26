@@ -1,10 +1,13 @@
-// Aura Credit Risk Intelligence Platform - Frontend Script
+﻿// Nexus Risk — AI-Powered Credit Risk Underwriting Platform
 
-// Application Configuration
+// ═══════════════════════════════════════════════════════════════
+// DEPLOYMENT CONFIGURATION
+// LOCAL DEV  → leave API_BASE_URL as ''
+// PRODUCTION → paste your Render URL here (no trailing slash)
+//              e.g. 'https://nexus-risk-api.onrender.com'
+// ═══════════════════════════════════════════════════════════════
 const CONFIG = {
-    // If hosting frontend on Vercel and backend on Render, set this to your Render URL (e.g. 'https://nexus-risk.onrender.com')
-    // Otherwise, leave empty to use relative paths for local development or unified servers.
-    API_BASE_URL: ''
+    API_BASE_URL: ''   // ← PASTE YOUR RENDER URL HERE BEFORE DEPLOYING TO VERCEL
 };
 
 // Global Application State
@@ -1312,4 +1315,193 @@ function clearApiKey() {
     localStorage.removeItem('gemini_api_key');
     alert("Gemini API key cleared from browser storage.");
     toggleChatSettings();
+}
+
+// ---------------------------------------------------------------
+//  WHAT-IF SCENARIO SIMULATOR
+// ---------------------------------------------------------------
+
+// Stores original prediction inputs for reset and delta comparison
+let _wiOriginalInputs = null;
+let _wiOriginalProb   = null;
+let _wiDebounceTimer  = null;
+
+/**
+ * Called after every successful prediction to initialise the simulator.
+ * Seeds sliders with the applicant's actual values.
+ */
+function initWhatIfSimulator(inputs, defaultProb) {
+    _wiOriginalInputs = { ...inputs };
+    _wiOriginalProb   = defaultProb;
+
+    const income = parseFloat(inputs.income || 50000);
+    const loan   = parseFloat(inputs.loan_amount || 100000);
+    const ext2   = parseFloat(inputs.ext_source_2 || 0.5);
+    const late   = parseFloat(inputs.late_payment_rate || 0.0);
+
+    // Set slider values
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    set('wi-income', Math.min(500000, Math.max(10000, income)));
+    set('wi-loan',   Math.min(2000000, Math.max(10000, loan)));
+    set('wi-ext2',   Math.min(1, Math.max(0, ext2)));
+    set('wi-late',   Math.min(1, Math.max(0, late)));
+
+    // Update display labels
+    updateWhatIfDisplay('income', income, false);
+    updateWhatIfDisplay('loan',   loan,   false);
+    updateWhatIfDisplay('ext2',   ext2,   false);
+    updateWhatIfDisplay('late',   late,   false);
+
+    // Show the simulator sections
+    const ws = document.getElementById('whatif-section');
+    const cs = document.getElementById('counterfactual-section');
+    if (ws) ws.style.display = '';
+    if (cs) cs.style.display = '';
+
+    // Render counterfactuals
+    renderCounterfactuals(inputs.counterfactuals || []);
+}
+
+/**
+ * Formats a number as Indian Rupees (?) with K/L shorthand.
+ */
+function fmtRupees(v) {
+    v = parseFloat(v);
+    if (v >= 100000) return '?' + (v / 100000).toFixed(1) + 'L';
+    if (v >= 1000)   return '?' + (v / 1000).toFixed(0) + 'K';
+    return '?' + v.toFixed(0);
+}
+
+/**
+ * Fired on every slider input event. Updates the label and debounces the API call.
+ */
+function updateWhatIfDisplay(field, value, triggerSimulation = true) {
+    value = parseFloat(value);
+    const displays = {
+        income: () => { const el = document.getElementById('wi-income-display'); if (el) el.textContent = fmtRupees(value); },
+        loan:   () => { const el = document.getElementById('wi-loan-display');   if (el) el.textContent = fmtRupees(value); },
+        ext2:   () => { const el = document.getElementById('wi-ext2-display');   if (el) el.textContent = value.toFixed(3); },
+        late:   () => { const el = document.getElementById('wi-late-display');   if (el) el.textContent = (value * 100).toFixed(1) + '%'; },
+    };
+    if (displays[field]) displays[field]();
+
+    if (!triggerSimulation || !_wiOriginalInputs) return;
+
+    // Debounce: wait 400ms after last slider movement before calling API
+    clearTimeout(_wiDebounceTimer);
+    _wiDebounceTimer = setTimeout(() => runWhatIfPrediction(), 400);
+}
+
+/**
+ * Builds modified inputs from slider values and calls the predict API.
+ */
+async function runWhatIfPrediction() {
+    if (!_wiOriginalInputs) return;
+
+    const loadingEl = document.getElementById('wi-loading-text');
+    if (loadingEl) loadingEl.textContent = 'Recalculating�';
+
+    const income = parseFloat(document.getElementById('wi-income').value);
+    const loan   = parseFloat(document.getElementById('wi-loan').value);
+    const ext2   = parseFloat(document.getElementById('wi-ext2').value);
+    const late   = parseFloat(document.getElementById('wi-late').value);
+
+    const modifiedInputs = {
+        ..._wiOriginalInputs,
+        income:                     income,
+        loan_amount:                loan,
+        ext_source_2:               ext2,
+        late_payment_rate:          late,
+        // Co-variance scaling fields so backend can adjust annuity/goods_price
+        original_loan_amount:       parseFloat(_wiOriginalInputs.loan_amount || loan),
+        original_annuity:           parseFloat(_wiOriginalInputs.annuity || 10000),
+        original_late_payment_rate: parseFloat(_wiOriginalInputs.late_payment_rate || 0),
+    };
+
+    try {
+        const apiBase = CONFIG.API_BASE_URL || '';
+        const resp = await fetch(`${apiBase}/api/predict`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(modifiedInputs),
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const result = await resp.json();
+
+        displayWhatIfResult(result.default_probability, result.decision, result.decision_color);
+        if (loadingEl) loadingEl.textContent = '? Updated';
+        setTimeout(() => { if (loadingEl) loadingEl.textContent = ''; }, 1500);
+    } catch (e) {
+        if (loadingEl) loadingEl.textContent = 'Error recalculating.';
+        console.error('[What-If] Prediction error:', e);
+    }
+}
+
+/**
+ * Renders the What-If result bar with probability, delta, and decision badge.
+ */
+function displayWhatIfResult(prob, decision, color) {
+    const resultEl = document.getElementById('whatif-result');
+    if (resultEl) resultEl.style.display = '';
+
+    const probEl    = document.getElementById('wi-prob-value');
+    const deltaEl   = document.getElementById('wi-prob-delta');
+    const badgeEl   = document.getElementById('wi-decision-badge');
+    const barEl     = document.getElementById('wi-prob-bar');
+
+    if (probEl) probEl.textContent = (prob * 100).toFixed(1) + '%';
+    if (probEl) probEl.style.color = color || '#6366f1';
+
+    if (deltaEl && _wiOriginalProb !== null) {
+        const delta = (prob - _wiOriginalProb) * 100;
+        deltaEl.textContent = (delta >= 0 ? '+' : '') + delta.toFixed(1) + '% vs original';
+        deltaEl.style.color = delta > 0 ? '#ef4444' : '#10b981';
+    }
+
+    if (badgeEl) {
+        badgeEl.textContent = decision;
+        badgeEl.style.background = (color || '#6366f1') + '22';
+        badgeEl.style.color      = color || '#6366f1';
+    }
+
+    if (barEl) {
+        barEl.style.width      = Math.min(100, prob * 100) + '%';
+        barEl.style.background = color || '#6366f1';
+    }
+}
+
+/**
+ * Resets all sliders back to the original prediction values.
+ */
+function resetWhatIf() {
+    if (!_wiOriginalInputs) return;
+    initWhatIfSimulator(_wiOriginalInputs, _wiOriginalProb);
+    const resultEl = document.getElementById('whatif-result');
+    if (resultEl) resultEl.style.display = 'none';
+}
+
+/**
+ * Renders the counterfactual "Path to Next Tier" cards.
+ */
+function renderCounterfactuals(counterfactuals) {
+    const container = document.getElementById('counterfactual-list');
+    if (!container) return;
+
+    if (!counterfactuals || counterfactuals.length === 0) {
+        container.innerHTML = '<div style="color:var(--success,#10b981); font-size:12px; font-weight:600;">? This applicant is already in the best achievable tier.</div>';
+        return;
+    }
+
+    const icons = ['??', '??', '??', '?', '??'];
+    container.innerHTML = counterfactuals.map((cf, i) => `
+        <div class="cf-card">
+            <div class="cf-icon">${icons[i % icons.length]}</div>
+            <div class="cf-body">
+                <div class="cf-action">${cf.action}</div>
+                <div class="cf-change">${cf.change_needed}</div>
+                <div class="cf-result">Simulated probability drops to ${cf.new_probability}%</div>
+            </div>
+            <div class="cf-badge">? ${cf.new_tier}</div>
+        </div>
+    `).join('');
 }

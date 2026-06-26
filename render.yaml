@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: nexus-risk-api
+    runtime: python
+    region: singapore
+    plan: free
+
+    # Build
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+
+    # Start
+    startCommand: python main.py
+
+    # Environment Variables
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: GEMINI_API_KEY
+        sync: false          # Set this manually in Render dashboard
+
+    # Health check
+    healthCheckPath: /api/health

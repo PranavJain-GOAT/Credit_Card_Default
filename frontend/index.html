@@ -316,6 +316,109 @@
                     </div>
                 </div>
 
+                <!-- ════ WHAT-IF SIMULATOR ════ -->
+                <div class="card" id="whatif-section" style="display:none; margin-top:16px;">
+                    <div class="card-header">
+                        <h3>⚡ What-If Scenario Simulator</h3>
+                        <span class="card-badge" style="background:var(--accent-muted);color:var(--accent);">Live Recalculation</span>
+                    </div>
+                    <p class="card-desc">
+                        Adjust applicant variables below. The model recomputes the default probability <strong>instantly</strong> — SHAP explanations update live.
+                    </p>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; padding:0 16px 8px;">
+                        <!-- Slider: Income -->
+                        <div class="whatif-slider-group">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                <label style="font-size:11px; font-weight:600; color:var(--text-secondary);">Annual Income</label>
+                                <span id="wi-income-display" style="font-size:11px; font-family:var(--mono); color:var(--accent); font-weight:700;">₹50,000</span>
+                            </div>
+                            <input type="range" id="wi-income" class="whatif-range" min="10000" max="500000" step="5000" value="50000"
+                                   oninput="updateWhatIfDisplay('income', this.value)">
+                            <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted);">
+                                <span>₹10K</span><span>₹500K</span>
+                            </div>
+                        </div>
+                        <!-- Slider: Loan Amount -->
+                        <div class="whatif-slider-group">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                <label style="font-size:11px; font-weight:600; color:var(--text-secondary);">Loan Amount</label>
+                                <span id="wi-loan-display" style="font-size:11px; font-family:var(--mono); color:var(--accent); font-weight:700;">₹100,000</span>
+                            </div>
+                            <input type="range" id="wi-loan" class="whatif-range" min="10000" max="2000000" step="10000" value="100000"
+                                   oninput="updateWhatIfDisplay('loan', this.value)">
+                            <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted);">
+                                <span>₹10K</span><span>₹20L</span>
+                            </div>
+                        </div>
+                        <!-- Slider: External Score 2 -->
+                        <div class="whatif-slider-group">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                <label style="font-size:11px; font-weight:600; color:var(--text-secondary);">Bureau Score (EXT_2)</label>
+                                <span id="wi-ext2-display" style="font-size:11px; font-family:var(--mono); color:var(--accent); font-weight:700;">0.500</span>
+                            </div>
+                            <input type="range" id="wi-ext2" class="whatif-range" min="0" max="1" step="0.01" value="0.5"
+                                   oninput="updateWhatIfDisplay('ext2', this.value)">
+                            <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted);">
+                                <span>0.0 (High Risk)</span><span>1.0 (Low Risk)</span>
+                            </div>
+                        </div>
+                        <!-- Slider: Late Payment Rate -->
+                        <div class="whatif-slider-group">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                <label style="font-size:11px; font-weight:600; color:var(--text-secondary);">Late Payment Rate</label>
+                                <span id="wi-late-display" style="font-size:11px; font-family:var(--mono); color:var(--accent); font-weight:700;">0.0%</span>
+                            </div>
+                            <input type="range" id="wi-late" class="whatif-range" min="0" max="1" step="0.01" value="0"
+                                   oninput="updateWhatIfDisplay('late', this.value)">
+                            <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted);">
+                                <span>0% (Perfect)</span><span>100% (All Late)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What-If Result Bar -->
+                    <div id="whatif-result" style="display:none; margin:12px 16px 16px; padding:14px 16px; border-radius:8px; background:var(--bg-secondary); border:1px solid var(--border);">
+                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px;">Simulated Default Probability</div>
+                                <div style="display:flex; align-items:baseline; gap:8px;">
+                                    <span id="wi-prob-value" style="font-size:28px; font-weight:700; font-family:var(--mono); color:var(--accent);">--%</span>
+                                    <span id="wi-prob-delta" style="font-size:12px; font-weight:600;"></span>
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Simulated Decision</div>
+                                <span id="wi-decision-badge" style="font-size:12px; font-weight:700; padding:4px 10px; border-radius:4px; background:var(--accent-muted); color:var(--accent);">--</span>
+                            </div>
+                        </div>
+                        <div style="margin-top:10px; height:6px; border-radius:3px; background:var(--border); overflow:hidden;">
+                            <div id="wi-prob-bar" style="height:100%; border-radius:3px; width:0%; transition:width 0.4s ease; background:var(--accent);"></div>
+                        </div>
+                    </div>
+
+                    <div style="padding:0 16px 16px;">
+                        <button class="btn-secondary" id="wi-reset-btn" onclick="resetWhatIf()" style="font-size:11px; padding:6px 14px;">
+                            ↩ Reset to Original Values
+                        </button>
+                        <span style="font-size:10px; color:var(--text-muted); margin-left:10px;" id="wi-loading-text"></span>
+                    </div>
+                </div>
+
+                <!-- ════ COUNTERFACTUAL PATHS ════ -->
+                <div class="card" id="counterfactual-section" style="display:none; margin-top:16px;">
+                    <div class="card-header">
+                        <h3>🎯 Path to Next Approval Tier</h3>
+                        <span class="card-badge" style="background:var(--success-muted);color:var(--success);">Counterfactual Analysis</span>
+                    </div>
+                    <p class="card-desc">
+                        Minimum changes needed for this applicant to reach the next better risk tier.
+                        Each path was computed by the CatBoost model — not rules.
+                    </p>
+                    <div id="counterfactual-list" style="padding:0 16px 16px; display:flex; flex-direction:column; gap:10px;">
+                        <div style="color:var(--text-muted); font-size:12px;">Run an assessment to see counterfactual paths.</div>
+                    </div>
+                </div>
+
             </div>
         </section>
 

@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+*.db
+*.log
+home-credit-default-risk/
+research/
+.git/
+.gitignore
+*.ipynb
+*.ipynb_checkpoints/
+node_modules/
+.DS_Store
+mlruns/
