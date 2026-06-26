@@ -51,7 +51,7 @@ def predict_endpoint(body: ApplicantInput):
         print(f"[Nexus Risk] Prediction for {inputs.get('name')} | "
               f"{result['risk_score']}% | {result['decision']} | {latency_ms}ms")
 
-        # Persist to SQLite
+        # Persist to PostgreSQL
         db_id = save_prediction(inputs, result)
         result["db_id"] = db_id
 

@@ -4,13 +4,24 @@ import json
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
-MODEL_PATH          = os.path.join(BASE_DIR, "catboost_credit_risk.pkl")
-FEATURE_COLS_PATH   = os.path.join(BASE_DIR, "feature_columns.pkl")
+# ── Load Environment Variables from .env ─────────────────────────────────────
+dotenv_path = os.path.join(BASE_DIR, ".env")
+if os.path.exists(dotenv_path):
+    with open(dotenv_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                os.environ[key.strip()] = val.strip()
+
+# ── Paths & Database ──────────────────────────────────────────────────────────
+MODEL_PATH            = os.path.join(BASE_DIR, "catboost_credit_risk.pkl")
+FEATURE_COLS_PATH     = os.path.join(BASE_DIR, "feature_columns.pkl")
 FEATURE_DEFAULTS_PATH = os.path.join(BASE_DIR, "feature_defaults.json")
 CATEGORY_MAPPINGS_PATH = os.path.join(BASE_DIR, "category_mappings.json")
-DB_PATH             = os.path.join(BASE_DIR, "credit_risk.db")
-FRONTEND_DIR        = os.path.join(BASE_DIR, "..", "frontend")
+DATABASE_URL          = os.environ.get("DATABASE_URL")
+FRONTEND_DIR          = os.path.join(BASE_DIR, "..", "frontend")
+
 
 # ── Server ─────────────────────────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 8000))

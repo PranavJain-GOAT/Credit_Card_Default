@@ -1,4 +1,4 @@
-﻿# Nexus Risk — AI-Powered Credit Risk Underwriting Platform
+# Nexus Risk — AI-Powered Credit Risk Underwriting Platform
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![CatBoost](https://img.shields.io/badge/CatBoost-ROC--AUC%200.774-F7931E)](https://catboost.ai)
@@ -37,7 +37,7 @@ A production-grade credit risk intelligence platform serving real-time loan defa
 └───────────┬────────────────────────┬─────────────────────────┘
             │                        │
 ┌───────────▼──────────┐   ┌────────▼──────────────────────┐
-│   CatBoost Model     │   │   SQLite Audit Database        │
+│   CatBoost Model     │   │   PostgreSQL Audit Database    │
 │   145 features       │   │   every prediction logged      │
 │   SHAP TreeExplainer │   └────────────────────────────────┘
 │   Counterfactuals    │
@@ -62,7 +62,7 @@ A production-grade credit risk intelligence platform serving real-time loan defa
 | **Counterfactual paths** | Cheapest action to reach next approval tier |
 | **Batch inference** | Upload CSV → JSON predictions for all rows |
 | **Gemini AI chatbot** | Natural language credit risk Q&A |
-| **Audit logging** | Every prediction persisted to SQLite |
+| **Audit logging** | Every prediction persisted to PostgreSQL |
 | **Swagger UI** | Auto-generated interactive API docs at `/docs` |
 | **Auto-deploy** | Both services redeploy on every `git push` to main |
 
@@ -118,7 +118,7 @@ nexus-risk/
 │   │   ├── prediction_service.py  ← Feature engineering + CatBoost inference
 │   │   ├── shap_service.py        ← SHAP TreeExplainer (top-7 contributions)
 │   │   ├── gemini_service.py      ← Gemini 2.5 API + rule-based fallback
-│   │   └── db_service.py          ← SQLite audit logging
+│   │   └── db_service.py          ← PostgreSQL audit logging
 │   │
 │   ├── schemas/
 │   │   └── applicant.py           ← Pydantic request / response models
