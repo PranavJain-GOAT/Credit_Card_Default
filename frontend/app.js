@@ -7,7 +7,7 @@
 //              e.g. 'https://nexus-risk-api.onrender.com'
 // ═══════════════════════════════════════════════════════════════
 const CONFIG = {
-    API_BASE_URL: ''   // ← PASTE YOUR RENDER URL HERE BEFORE DEPLOYING TO VERCEL
+    API_BASE_URL: 'https://credit-card-default-3xnc.onrender.com'   // Render backend
 };
 
 // Global Application State
