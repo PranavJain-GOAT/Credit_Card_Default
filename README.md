@@ -1,4 +1,4 @@
-# Nexus Risk — AI-Powered Credit Risk Underwriting Platform
+﻿# Nexus Risk — AI-Powered Credit Risk Underwriting Platform
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![CatBoost](https://img.shields.io/badge/CatBoost-ROC--AUC%200.774-F7931E)](https://catboost.ai)
