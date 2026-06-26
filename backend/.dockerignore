@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.log
+.env
+mlruns/
+home-credit-default-risk/
+*.csv
+research/
