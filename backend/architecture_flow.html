@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Risk - Architecture Diagram</title>
+    <!-- Mermaid CDN -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'dark',
+            securityLevel: 'loose'
+        });
+    </script>
+    <style>
+        body {
+            background-color: #0f0f11;
+            color: #e4e4e7;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            color: #ffffff;
+        }
+        p {
+            color: #a1a1aa;
+            margin-bottom: 30px;
+        }
+        .diagram-container {
+            background-color: #18181b;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #27272a;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            max-width: 95%;
+            overflow-x: auto;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nexus Risk Platform</h1>
+    <p>Complete End-to-End System Architecture & Data Flow Diagram</p>
+    
+    <div class="diagram-container">
+        <div class="mermaid">
+            graph TD
+                %% Define Nodes
+                User([1. Credit Analyst / User]) -->|1. Clicks Submit| UI[2. Frontend UI: index.html + app.js]
+                UI -->|2. HTTPS POST request via browser Fetch API| RenderLB[3. Render Load Balancer / Reverse Proxy]
+                RenderLB -->|3. Decrypted HTTP Port-Forwarding| Uvicorn[4. Uvicorn ASGI Web Server]
+                
+                subgraph FastAPI Backend Container [FastAPI Backend Container]
+                    Uvicorn -->|4. ASGI Interface Specification| Starlette[5. Starlette Routing Engine]
+                    Starlette -->|5. Route Matching & URL Dispatch| RouteHandler[6. Route Handler: routes/predict.py]
+                    RouteHandler -->|6. FastAPI Dependency Injection| PydanticSchema[7. Pydantic Schema: ApplicantInput]
+                    
+                    PydanticSchema -->|7. Validated Python Object| PredService[8. Prediction Service: prediction_service.py]
+                    PydanticSchema -->|Validation Failure| ErrResponse[HTTP 422 Error Response]
+                    
+                    subgraph Machine Learning Layer [Machine Learning Layer]
+                        PredService -->|In-Memory Call| Imputer[Feature Imputation & Mappings]
+                        Imputer -->|In-Memory Call| FeatureEng[Feature Engineering Pipeline]
+                        FeatureEng -->|145-Feature Vector| CatBoost[9. CatBoost Model: catboost_credit_risk.pkl]
+                        CatBoost -->|Outputs Probability| ThresholdTuning[10. Decision Engine: Threshold 0.15]
+                    end
+                    
+                    RouteHandler -->|8. In-Memory Python Call| ShapService[11. SHAP Service: shap_service.py]
+                    ShapService -->|TreeExplainer| ShapExplainer[Computes Top-7 Contributions]
+                    
+                    RouteHandler -->|9. In-Memory Python Call| DbService[12. DB Service: db_service.py]
+                    DbService -->|10. psycopg2 Database Driver / PostgreSQL Protocol| Postgres[(13. Cloud PostgreSQL DB: Neon AWS)]
+                end
+                
+                RouteHandler -->|11. In-Memory Return| ResponseValidator[14. Pydantic Response Schema]
+                ResponseValidator -->|12. JSON Serialization & HTTP Response| Uvicorn
+                Uvicorn -->|13. HTTP Response Bytes| RenderLB
+                RenderLB -->|14. HTTPS Encrypted Response| UI
+                UI -->|15. DOM Manipulation / Browser Rendering| RenderUI[15. Risk Meter, SHAP Chart, PostgreSQL History]
+
+                %% Style definitions
+                style User fill:#2a2a2a,stroke:#fff,stroke-width:2px,color:#fff
+                style UI fill:#0d47a1,stroke:#fff,stroke-width:1px,color:#fff
+                style Uvicorn fill:#1b5e20,stroke:#fff,stroke-width:1px,color:#fff
+                style FastAPI Backend Container fill:#1c1c1c,stroke:#333,stroke-width:2px,color:#fff
+                style Postgres fill:#ff6f00,stroke:#fff,stroke-width:1px,color:#fff
+                style RenderLB fill:#455a64,stroke:#fff,stroke-width:1px,color:#fff
+        </div>
+    </div>
+</body>
+</html>
