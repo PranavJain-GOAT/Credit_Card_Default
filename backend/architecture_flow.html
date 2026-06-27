@@ -10,7 +10,15 @@
         mermaid.initialize({ 
             startOnLoad: true, 
             theme: 'dark',
-            securityLevel: 'loose'
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true
+            },
+            themeVariables: {
+                fontSize: '18px',
+                fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
+            }
         });
     </script>
     <style>
@@ -25,21 +33,23 @@
             align-items: center;
         }
         h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             margin-bottom: 5px;
             color: #ffffff;
         }
         p {
             color: #a1a1aa;
             margin-bottom: 30px;
+            font-size: 1.1rem;
         }
         .diagram-container {
             background-color: #18181b;
-            padding: 30px;
+            padding: 40px;
             border-radius: 12px;
             border: 1px solid #27272a;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            max-width: 95%;
+            width: 95%;
+            max-width: 1600px;
             overflow-x: auto;
         }
         .mermaid {
