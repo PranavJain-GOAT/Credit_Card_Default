@@ -45,7 +45,7 @@ export default function PrintShell({ results, applicant }) {
   if (!results || !applicant) return null;
 
   return (
-    <div className="print-shell" id="print-shell">
+    <div className="print-shell" id="print-shell" style={{ display: 'none' }}>
       <div className="print-header">
         <div className="print-logo">NEXUS RISK</div>
         <div className="print-meta">
