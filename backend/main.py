@@ -6,10 +6,8 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
-from config import PORT, FRONTEND_DIR
+from config import PORT
 from services.db_service import init_db
 from routes.predict import router as predict_router
 from routes.chat import router as chat_router
@@ -37,9 +35,11 @@ app = FastAPI(
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
+# Allow the Vercel frontend + local dev
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[ALLOWED_ORIGINS] if ALLOWED_ORIGINS != "*" else ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -49,21 +49,10 @@ app.include_router(predict_router, prefix="/api")
 app.include_router(chat_router,    prefix="/api")
 app.include_router(history_router, prefix="/api")
 
-# ── Serve Frontend Static Files ────────────────────────────────────────────────
-frontend_path = os.path.abspath(FRONTEND_DIR)
-if os.path.isdir(frontend_path):
-    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
-
-    @app.get("/", include_in_schema=False)
-    def serve_index():
-        return FileResponse(os.path.join(frontend_path, "index.html"))
-
-    @app.get("/{full_path:path}", include_in_schema=False)
-    def serve_spa(full_path: str):
-        file_path = os.path.join(frontend_path, full_path)
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
-        return FileResponse(os.path.join(frontend_path, "index.html"))
+# ── Health check ───────────────────────────────────────────────────────────────
+@app.get("/api/health", include_in_schema=False)
+def health():
+    return {"status": "ok"}
 
 # ── Run ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

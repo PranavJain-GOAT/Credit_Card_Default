@@ -5,20 +5,16 @@ services:
     region: singapore
     plan: free
 
-    # Build — installs Node (React) first, then Python backend
     rootDir: backend
-    buildCommand: |
-      cd ../frontend-react && npm ci && npm run build && cd ../backend && pip install -r requirements.txt
-
-    # Start
+    buildCommand: pip install -r requirements.txt
     startCommand: python main.py
 
-    # Environment Variables
     envVars:
       - key: PORT
         value: 8000
       - key: GEMINI_API_KEY
         sync: false          # Set this manually in Render dashboard
+      - key: DATABASE_URL
+        sync: false          # Set this manually in Render dashboard
 
-    # Health check
     healthCheckPath: /api/health

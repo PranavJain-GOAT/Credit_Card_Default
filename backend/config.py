@@ -20,7 +20,6 @@ FEATURE_COLS_PATH     = os.path.join(BASE_DIR, "feature_columns.pkl")
 FEATURE_DEFAULTS_PATH = os.path.join(BASE_DIR, "feature_defaults.json")
 CATEGORY_MAPPINGS_PATH = os.path.join(BASE_DIR, "category_mappings.json")
 DATABASE_URL          = os.environ.get("DATABASE_URL")
-FRONTEND_DIR          = os.path.join(BASE_DIR, "..", "frontend-react", "dist")
 
 
 # ── Server ─────────────────────────────────────────────────────────────────────
