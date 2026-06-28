@@ -147,14 +147,12 @@ def build_feature_vector(inputs: dict) -> tuple[list, dict]:
 # ── Counterfactual Generator ───────────────────────────────────────────────────
 def generate_counterfactuals(inputs: dict, current_prob: float) -> list:
     """
-    Try adjusting key variables to find the cheapest path to the next tier.
-    Returns a list of counterfactual suggestions.
+    Generate personalised improvement paths for every applicant.
+    Always returns up to 3 actionable suggestions, regardless of risk tier.
+    Each suggestion is specific to this applicant's actual data.
     """
-    TIER_THRESHOLD = 0.20  # default_prob < 0.20 = APPROVE
-
     suggestions = []
 
-    # Helper: run prediction with modified inputs
     def probe(modified: dict) -> float:
         try:
             feats, _ = build_feature_vector(modified)
@@ -164,98 +162,96 @@ def generate_counterfactuals(inputs: dict, current_prob: float) -> list:
             return current_prob
 
     base = dict(inputs)
-    income    = _get_float(inputs, "income", 50000.0)
-    loan      = _get_float(inputs, "loan_amount", 100000.0)
-    total_debt= _get_float(inputs, "total_debt", 0.0)
-    late_rate = _get_float(inputs, "late_payment_rate", 0.0)
-    ext2      = _get_float(inputs, "ext_source_2", 0.5)
+    income     = _get_float(inputs, "income",            50000.0)
+    loan       = _get_float(inputs, "loan_amount",       100000.0)
+    total_debt = _get_float(inputs, "total_debt",        0.0)
+    late_rate  = _get_float(inputs, "late_payment_rate", 0.0)
+    ext1       = _get_float(inputs, "ext_source_1",      0.5)
+    ext2       = _get_float(inputs, "ext_source_2",      0.5)
+    ext3       = _get_float(inputs, "ext_source_3",      0.5)
+    years_emp  = _get_float(inputs, "years_employed",    5.0)
 
-    target_tiers = {
-        "APPROVE":        0.19,
-        "REVIEW":         0.49,
-        "MANUAL REVIEW":  0.74,
-    }
-    # Find what the next better tier would be
-    next_target = None
+    # Determine the target probability based on the applicant's current tier.
+    # For already-approved applicants we still show "to keep your profile healthy" actions.
     if current_prob >= 0.75:
-        next_target = ("MANUAL REVIEW", 0.74)
+        target_prob = 0.74          # → MANUAL REVIEW
+        target_tier = "MANUAL REVIEW"
     elif current_prob >= 0.50:
-        next_target = ("REVIEW", 0.49)
+        target_prob = 0.49          # → REVIEW
+        target_tier = "REVIEW"
     elif current_prob >= 0.20:
-        next_target = ("APPROVE", 0.19)
+        target_prob = 0.19          # → APPROVE
+        target_tier = "APPROVE"
     else:
-        return []  # already in APPROVE
+        # Already APPROVE — show what would make the profile even stronger
+        target_prob = max(0.0, current_prob - 0.05)
+        target_tier = "APPROVE (Stronger)"
 
-    tier_name, target_prob = next_target
-
-    # 1. Try increasing income in 10% increments
-    for pct in range(10, 110, 10):
+    # ── 1. Income increase (personalised % based on leverage ratio) ────────────
+    ci_ratio = loan / income if income > 0 else 3.0
+    step_pct = 10 if ci_ratio < 3 else 5          # smaller steps for high-leverage
+    for pct in range(step_pct, 110, step_pct):
         mod = {**base, "income": income * (1 + pct / 100)}
         p = probe(mod)
-        if p <= target_prob:
+        if p <= target_prob or pct >= 50:          # show even if not quite enough
             inc_needed = mod["income"] - income
             suggestions.append({
                 "action": "Increase annual income",
-                "change_needed": f"by ₹{inc_needed:,.0f} (+{pct}%)",
+                "change_needed": f"by ${inc_needed:,.0f} (+{pct}%) to reduce credit-income leverage from {ci_ratio:.1f}x",
                 "new_probability": round(p * 100, 1),
-                "new_tier": tier_name,
+                "new_tier": target_tier,
             })
             break
 
-    # 2. Try reducing loan amount in 10% increments
-    for pct in range(10, 60, 5):
+    # ── 2. Loan amount reduction ───────────────────────────────────────────────
+    for pct in range(10, 61, 5):
         mod = {**base, "loan_amount": loan * (1 - pct / 100)}
         p = probe(mod)
-        if p <= target_prob:
+        if p <= target_prob or pct >= 30:
             reduction = loan - mod["loan_amount"]
             suggestions.append({
-                "action": "Reduce loan amount",
-                "change_needed": f"by ₹{reduction:,.0f} (-{pct}%)",
+                "action": "Reduce requested loan amount",
+                "change_needed": f"by ${reduction:,.0f} (-{pct}%) to lower debt service and credit leverage",
                 "new_probability": round(p * 100, 1),
-                "new_tier": tier_name,
+                "new_tier": target_tier,
             })
             break
 
-    # 3. Try reducing outstanding debt in 20% increments
-    if total_debt > 5000:
-        for pct in range(20, 110, 10):
-            mod = {**base, "total_debt": max(0, total_debt * (1 - pct / 100))}
-            p = probe(mod)
-            if p <= target_prob:
-                reduction = total_debt - mod["total_debt"]
-                suggestions.append({
-                    "action": "Pay down bureau debt",
-                    "change_needed": f"by ₹{reduction:,.0f} (-{pct}%)",
-                    "new_probability": round(p * 100, 1),
-                    "new_tier": tier_name,
-                })
-                break
-
-    # 4. Try eliminating late payments
-    if late_rate > 0.01:
+    # ── 3. Late payment improvement (always shown if any, otherwise bureau improvement) ──
+    if late_rate > 0.005:
+        # Has late payments — show what clearing them does
         mod = {**base, "late_payment_rate": 0.0, "original_late_payment_rate": 0.0}
         p = probe(mod)
-        if p <= target_prob:
-            suggestions.append({
-                "action": "Clear all late payment history",
-                "change_needed": f"(reduce {late_rate*100:.0f}% late rate to 0%)",
-                "new_probability": round(p * 100, 1),
-                "new_tier": tier_name,
-            })
-
-    # 5. Try improving external credit scores
-    if ext2 < 0.65:
-        mod = {**base, "ext_source_2": min(0.75, ext2 + 0.20), "ext_source_3": min(0.75, _get_float(inputs, "ext_source_3", 0.5) + 0.15)}
+        suggestions.append({
+            "action": "Eliminate late payment history",
+            "change_needed": f"Clear all {late_rate*100:.1f}% late rate — set up auto-payments and pay overdue balances",
+            "new_probability": round(p * 100, 1),
+            "new_tier": target_tier,
+        })
+    elif total_debt > 10000:
+        # Has significant debt — show paydown benefit
+        mod = {**base, "total_debt": max(0, total_debt * 0.50)}
         p = probe(mod)
-        if p <= target_prob:
-            suggestions.append({
-                "action": "Improve bureau credit scores",
-                "change_needed": "EXT_SOURCE_2 to 0.70+ (pay existing balances, reduce enquiries)",
-                "new_probability": round(p * 100, 1),
-                "new_tier": tier_name,
-            })
+        suggestions.append({
+            "action": "Pay down outstanding bureau debt",
+            "change_needed": f"Reduce ${total_debt:,.0f} bureau debt by 50% (${total_debt*0.50:,.0f}) to improve DTI ratio",
+            "new_probability": round(p * 100, 1),
+            "new_tier": target_tier,
+        })
+    else:
+        # Low debt, no late payments — show bureau score improvement
+        ext_avg = (ext1 + ext2 + ext3) / 3
+        boost = min(1.0, ext2 + 0.20)
+        mod = {**base, "ext_source_2": boost, "ext_source_3": min(1.0, ext3 + 0.15)}
+        p = probe(mod)
+        suggestions.append({
+            "action": "Strengthen external credit bureau scores",
+            "change_needed": f"Improve EXT_SOURCE_2 from {ext2:.2f} to {boost:.2f} by reducing enquiries and paying all balances on time",
+            "new_probability": round(p * 100, 1),
+            "new_tier": target_tier,
+        })
 
-    return suggestions[:3]  # return top 3 most actionable
+    return suggestions[:3]
 
 
 # ── Main Prediction Function ───────────────────────────────────────────────────

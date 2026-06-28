@@ -1,5 +1,3 @@
-import WhatIfSimulator from './WhatIfSimulator';
-
 function DiagRow({ label, value, status, statusColor }) {
   return (
     <tr>
@@ -29,6 +27,34 @@ function ShapBars({ contributions }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+const CF_ICONS = ['🎯', '💼', '📊', '⭐', '🏦'];
+
+function CounterfactualPanel({ counterfactuals, decision }) {
+  const isApproved = decision === 'APPROVE';
+  if (isApproved || !counterfactuals || counterfactuals.length === 0) {
+    return (
+      <div style={{ color: 'var(--success-color)', fontSize: '13px', fontWeight: '600', padding: '12px 0' }}>
+        ✅ This applicant already qualifies for the best achievable tier. No corrective actions required.
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {counterfactuals.map((cf, i) => (
+        <div key={i} className="cf-card">
+          <div className="cf-icon">{CF_ICONS[i % CF_ICONS.length]}</div>
+          <div className="cf-body">
+            <div className="cf-action">{cf.action}</div>
+            <div className="cf-change">{cf.change_needed}</div>
+            <div className="cf-result">Simulated probability drops to {cf.new_probability}%</div>
+          </div>
+          <div className="cf-badge">→ {cf.new_tier}</div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -189,8 +215,22 @@ export default function DashboardTab({ results, applicant, theme }) {
         </div>
       </div>
 
-      {/* What-If Simulator */}
-      <WhatIfSimulator applicant={applicant} originalProb={results.default_probability} />
+      {/* Counterfactual Actions */}
+      <div className="card" id="counterfactual-panel" style={{ marginBottom: '16px' }}>
+        <div className="card-header">
+          <h3>🔄 Counterfactual Improvement Actions</h3>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            Personalised paths to upgrade this applicant's credit tier
+          </span>
+        </div>
+        <div className="card-body" style={{ padding: '16px' }}>
+          <CounterfactualPanel
+            counterfactuals={results.counterfactuals}
+            decision={results.decision}
+          />
+        </div>
+      </div>
+
     </div>
   );
 }
