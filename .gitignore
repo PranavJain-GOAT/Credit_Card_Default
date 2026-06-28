@@ -33,3 +33,8 @@ Thumbs.db
 
 # ── Logs ──────────────────────────────────────────────────────
 *.log
+
+# React Frontend
+frontend-react/node_modules/
+frontend-react/dist/
+frontend-react/.env.local

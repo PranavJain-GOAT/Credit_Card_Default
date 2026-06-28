@@ -5,9 +5,10 @@ services:
     region: singapore
     plan: free
 
-    # Build
+    # Build — installs Node (React) first, then Python backend
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      cd ../frontend-react && npm ci && npm run build && cd ../backend && pip install -r requirements.txt
 
     # Start
     startCommand: python main.py
