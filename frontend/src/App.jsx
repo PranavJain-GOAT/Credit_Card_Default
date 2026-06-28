@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import DashboardTab from './components/DashboardTab';
 import UnderwriteTab from './components/UnderwriteTab';
@@ -6,6 +6,7 @@ import AnalysisTab from './components/AnalysisTab';
 import HistoryTab from './components/HistoryTab';
 import ChatBot from './components/ChatBot';
 import PrintShell from './components/PrintShell';
+import { warmUpServer } from './api';
 
 const PAGE_TITLES = {
   dashboard:  'Underwriting Dashboard',
@@ -25,6 +26,9 @@ export default function App() {
   const [theme, setTheme] = useState('dark');
   const [predictionResults, setPredictionResults] = useState(null);
   const [activeApplicant, setActiveApplicant] = useState(null);
+
+  // Pre-warm the Render backend on page load so the cold-start doesn't hit the user mid-form
+  useEffect(() => { warmUpServer(); }, []);
 
   const switchTab = useCallback((tabId) => setCurrentTab(tabId), []);
 

@@ -16,6 +16,9 @@ const INITIAL_FORM = {
   ext_source_1: '', ext_source_2: '', ext_source_3: '',
 };
 
+// Fields that must be strictly > 0 (matches backend Pydantic schema)
+const GT_ZERO = ['income', 'loan_amount', 'annuity', 'goods_price'];
+
 const REQUIRED = {
   1: ['name', 'age', 'years_employed'],
   2: ['income', 'loan_amount', 'annuity', 'goods_price'],
@@ -41,7 +44,12 @@ export default function UnderwriteTab({ onPredictionResult }) {
     const newErrors = {};
     let valid = true;
     required.forEach(field => {
-      if (!String(form[field]).trim()) { newErrors[field] = true; valid = false; }
+      const val = String(form[field]).trim();
+      if (!val) { newErrors[field] = true; valid = false; return; }
+      // Financial fields must be > 0 (matches backend gt=0 constraint)
+      if (GT_ZERO.includes(field) && parseFloat(val) <= 0) {
+        newErrors[field] = true; valid = false;
+      }
     });
     setErrors(newErrors);
     return valid;
@@ -94,7 +102,7 @@ export default function UnderwriteTab({ onPredictionResult }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateStep(5)) { alert('Please fill in all required fields.'); return; }
+    if (!validateStep(5)) { alert('Please fill all required fields. Income, Loan Amount, Annuity and Goods Price must be greater than 0.'); return; }
     setLoading(true);
     try {
       const inputs = buildPayload();
@@ -103,7 +111,15 @@ export default function UnderwriteTab({ onPredictionResult }) {
       setStep(1);
       setForm(INITIAL_FORM);
     } catch (err) {
-      alert('Prediction request failed. Make sure the server is running!');
+      console.error('[Nexus Risk] Prediction error:', err);
+      const msg = err.message || '';
+      if (msg.includes('500') || msg.includes('502') || msg.includes('503') || msg.includes('504') || msg.includes('Failed to fetch')) {
+        alert('The server is waking up from sleep. Please click "Run Risk Assessment" again in 10 seconds.');
+      } else if (msg.includes('422') || msg.includes('Unprocessable')) {
+        alert('Form validation error: one or more values are out of range. Check that Income, Loan Amount, Annuity and Goods Price are greater than 0.');
+      } else {
+        alert(`Prediction failed: ${msg || 'Unknown error. Check your internet connection.'}`);
+      }
     } finally {
       setLoading(false);
     }
