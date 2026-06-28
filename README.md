@@ -1,13 +1,13 @@
 # Nexus Risk — AI-Powered Credit Risk Underwriting Platform
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![CatBoost](https://img.shields.io/badge/CatBoost-ROC--AUC%200.774-F7931E)](https://catboost.ai)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://python.org)
-[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)](https://docker.com)
 [![Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render&logoColor=white)](https://render.com)
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
 
-A production-grade credit risk intelligence platform serving real-time loan default predictions via a containerized FastAPI inference service. Built on CatBoost trained across 307K applicants with 145 handcrafted features, SHAP explainability, live What-If simulation, counterfactual paths, and Gemini AI-powered risk Q&A.
+A production-grade credit risk intelligence platform serving real-time loan default predictions via a FastAPI inference service. Built on CatBoost trained across 307K applicants with 145 handcrafted features, SHAP explainability, live What-If simulation, counterfactual paths, and Gemini AI-powered risk Q&A.
 
 **API Docs (Swagger):** [credit-card-default-3xnc.onrender.com/docs](https://credit-card-default-3xnc.onrender.com/docs)  
 **Health Check:** [credit-card-default-3xnc.onrender.com/api/health](https://credit-card-default-3xnc.onrender.com/api/health)
@@ -18,20 +18,20 @@ A production-grade credit risk intelligence platform serving real-time loan defa
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│               Vanilla JS Dashboard  (Vercel)                 │
+│               React Dashboard  (Vercel)                      │
 │                                                              │
 │  New Assessment  │  What-If Sliders  │  SHAP Charts         │
-│  Gemini AI Chat  │  Case History     │  Batch Upload        │
+│  Gemini AI Chat  │  Case History     │  Risk Dashboard       │
 └───────────────────────────┬──────────────────────────────────┘
                             │  HTTPS / JSON
 ┌───────────────────────────▼──────────────────────────────────┐
-│        Containerized FastAPI Service  (Render)               │
+│               FastAPI Service  (Render)                      │
 │                                                              │
-│   GET  /api/health    →  model status + feature count        │
+│   GET  /api/health    →  service status                      │
 │   POST /api/predict   →  single applicant inference          │
 │   POST /api/batch     →  bulk CSV inference                  │
 │   POST /api/chat      →  Gemini AI risk Q&A                  │
-│   GET  /api/history   →  audit log retrieval                 │
+│   POST /api/history   →  audit log retrieval                 │
 │                                                              │
 │   Interactive Swagger UI at /docs                            │
 └───────────┬────────────────────────┬─────────────────────────┘
@@ -97,10 +97,8 @@ CatBoost selected for native high-cardinality categorical handling — no one-ho
 nexus-risk/
 │
 ├── backend/
-│   ├── Dockerfile                 ← Container build definition
-│   ├── .dockerignore              ← Excludes large files from image
-│   ├── main.py                    ← FastAPI application entry point
-│   ├── config.py                  ← Paths, thresholds, model loading at startup
+│   ├── main.py                    ← FastAPI entry point (API-only, no static serving)
+│   ├── config.py                  ← Thresholds, model loading at startup
 │   ├── runtime.txt                ← Python 3.11.9 pin for Render
 │   ├── requirements.txt           ← Production dependencies
 │   │
@@ -110,7 +108,7 @@ nexus-risk/
 │   ├── category_mappings.json     ← Categorical encoding mappings
 │   │
 │   ├── routes/
-│   │   ├── predict.py             ← /health, /predict, /batch
+│   │   ├── predict.py             ← /predict, /batch
 │   │   ├── chat.py                ← /chat (Gemini AI)
 │   │   └── history.py             ← /history
 │   │
@@ -120,22 +118,35 @@ nexus-risk/
 │   │   ├── gemini_service.py      ← Gemini 2.5 API + rule-based fallback
 │   │   └── db_service.py          ← PostgreSQL audit logging
 │   │
-│   ├── schemas/
-│   │   └── applicant.py           ← Pydantic request / response models
-│   │
-│   └── models/
-│       └── train.py               ← MLflow + Optuna training pipeline
+│   └── schemas/
+│       └── applicant.py           ← Pydantic request / response models
 │
-├── frontend/
-│   ├── index.html                 ← Single-page dashboard
-│   ├── app.js                     ← Vanilla JS + What-If simulator logic
-│   └── style.css                  ← Design system (IBM Plex Sans)
+├── frontend/                      ← React + Vite (deployed on Vercel)
+│   ├── index.html
+│   ├── vite.config.js             ← Dev proxy → localhost:8000
+│   ├── .env.production            ← VITE_API_BASE_URL (Render URL)
+│   ├── package.json
+│   └── src/
+│       ├── main.jsx               ← Entry point
+│       ├── App.jsx                ← Global state, tab routing
+│       ├── api.js                 ← All API calls (fetch wrapper)
+│       ├── index.css              ← Full design system (IBM Plex Sans)
+│       └── components/
+│           ├── Sidebar.jsx        ← Nav, theme toggle
+│           ├── UnderwriteTab.jsx  ← 5-step wizard (35 fields)
+│           ├── DashboardTab.jsx   ← KPIs, risk meter, SHAP bars
+│           ├── AnalysisTab.jsx    ← Radar chart, bar chart, cash flow
+│           ├── HistoryTab.jsx     ← Table, search/sort, details modal
+│           ├── ChatBot.jsx        ← Floating Gemini AI chat
+│           ├── WhatIfSimulator.jsx← 4 sliders + counterfactual cards
+│           └── PrintShell.jsx     ← PDF export template
 │
 ├── research/
-│   └── Credit_Risk_Prediction.ipynb  ← EDA, feature engineering, model benchmarking
+│   ├── Credit_Risk_Prediction.ipynb  ← EDA, feature engineering, model benchmarking
+│   └── train.py                      ← MLflow + Optuna training pipeline
 │
-├── render.yaml                    ← Render Web Service deployment config
-├── vercel.json                    ← Vercel static site deployment config
+├── render.yaml                    ← Render backend deployment config
+├── vercel.json                    ← Vercel frontend deployment config
 ├── .gitignore
 └── README.md
 ```
@@ -144,12 +155,15 @@ nexus-risk/
 
 ## Running Locally
 
-### Without Docker
-
 ```bash
 git clone https://github.com/PranavJain-GOAT/Credit_Card_Default.git
-cd Credit_Card_Default/backend
+cd Credit_Card_Default
+```
 
+### Backend (FastAPI)
+
+```bash
+cd backend
 pip install -r requirements.txt
 
 # Optional: add Gemini API key
@@ -160,14 +174,14 @@ python main.py
 # → http://localhost:8000/docs  (Swagger UI)
 ```
 
-### With Docker
+### Frontend (React)
 
 ```bash
-cd Credit_Card_Default/backend
-
-docker build -t nexus-risk .
-docker run -p 8000:8000 -e GEMINI_API_KEY=your_key nexus-risk
-# → http://localhost:8000
+cd frontend
+npm install
+npm run dev
+# → http://localhost:3000
+# API calls auto-proxy to localhost:8000 via vite.config.js
 ```
 
 ---
@@ -176,7 +190,7 @@ docker run -p 8000:8000 -e GEMINI_API_KEY=your_key nexus-risk
 
 ### `GET /api/health`
 ```json
-{"status": "ok", "model": "catboost_v1", "features": 145, "version": "2.0.0"}
+{"status": "ok"}
 ```
 
 ### `POST /api/predict`
@@ -235,23 +249,29 @@ curl -X POST https://credit-card-default-3xnc.onrender.com/api/batch \
 | **Backend** | Render | `render.yaml` | Auto on `git push` |
 | **Frontend** | Vercel | `vercel.json` | Auto on `git push` |
 
-**Render settings** (`render.yaml`):
+**Render** (`render.yaml`):
 - Root Dir: `backend`
 - Build: `pip install -r requirements.txt`
 - Start: `python main.py`
-- Python: 3.11.9 (pinned via `runtime.txt`)
+- Env vars: `GEMINI_API_KEY`, `DATABASE_URL` (set in Render dashboard)
+
+**Vercel** (`vercel.json`):
+- Root Dir: `frontend` (set in Vercel project settings)
+- Build: `npm ci && npm run build`
+- Output: `dist/`
+- SPA rewrites: all routes → `index.html`
 
 ---
 
 ## Training Pipeline
 
 ```bash
-pip install mlflow optuna lightgbm xgboost
+pip install mlflow optuna lightgbm xgboost catboost
 
-cd backend
-python models/train.py   # runs MLflow + Optuna 50-trial search
+cd research
+python train.py   # runs MLflow + Optuna 50-trial search
 
-mlflow ui                # view at http://localhost:5000
+mlflow ui         # view experiments at http://localhost:5000
 ```
 
 Pipeline: merge 4 datasets → engineer 145 features → 5-model benchmark → Optuna Bayesian search → MLflow experiment logging → register best model.
@@ -265,8 +285,7 @@ Pipeline: merge 4 datasets → engineer 145 features → 5-model benchmark → O
 | **ML** | CatBoost, SHAP, scikit-learn, pandas, numpy |
 | **Training** | MLflow (tracking), Optuna (hyperparameter search) |
 | **API** | FastAPI, Uvicorn, Pydantic |
-| **Frontend** | Vanilla JS, Chart.js, IBM Plex Sans |
+| **Frontend** | React 18, Vite, react-chartjs-2, IBM Plex Sans |
 | **AI** | Gemini 2.5 Flash Lite + local fallback |
-| **Storage** | SQLite |
-| **Container** | Docker |
+| **Storage** | PostgreSQL (Neon) |
 | **Deploy** | Render (backend) · Vercel (frontend) |
