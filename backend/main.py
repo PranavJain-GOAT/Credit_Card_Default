@@ -49,7 +49,12 @@ app.include_router(predict_router, prefix="/api")
 app.include_router(chat_router,    prefix="/api")
 app.include_router(history_router, prefix="/api")
 
-# ── Health check ───────────────────────────────────────────────────────────────
+# ── Health check & Root ────────────────────────────────────────────────────────
+@app.get("/", include_in_schema=False)
+@app.head("/", include_in_schema=False)
+def root():
+    return {"message": "Nexus Risk API is running. Swagger docs at /docs"}
+
 @app.get("/api/health", include_in_schema=False)
 def health():
     return {"status": "ok"}
