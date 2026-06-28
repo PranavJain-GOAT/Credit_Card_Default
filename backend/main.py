@@ -3,6 +3,7 @@ Nexus Risk — AI-Powered Credit Risk Underwriting Platform
 FastAPI inference service | CatBoost + SHAP + Gemini 2.5 Flash Lite
 """
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,13 @@ from services.db_service import init_db
 from routes.predict import router as predict_router
 from routes.chat import router as chat_router
 from routes.history import router as history_router
+
+# ── Lifespan ───────────────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    print("[Nexus Risk] FastAPI server started. Swagger docs at /docs")
+    yield
 
 # ── App ────────────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -25,30 +33,16 @@ app = FastAPI(
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
-# ── CORS ─────────────────────────────────────────────────────────────────────────────
-ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://localhost:3000",
-    "http://127.0.0.1:8000",
-    # Add your Vercel frontend URL here after deployment:
-    # "https://nexus-risk.vercel.app",
-    # "https://nexus-risk-yourname.vercel.app",
-]
-
+# ── CORS ───────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # Keep wildcard for Render free tier (no custom domain)
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ── Startup ────────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-def on_startup():
-    init_db()
-    print("[Nexus Risk] FastAPI server started. Swagger docs at /docs")
 
 # ── API Routes (prefix /api) ───────────────────────────────────────────────────
 app.include_router(predict_router, prefix="/api")
